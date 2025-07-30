@@ -8,9 +8,9 @@ async function testConnection() {
   message.value = ''
   error.value = ''
   try {
-    const response = await fetch('http://localhost:3001/api/db-test')
+    const response = await fetch('/api/db-test')
       .catch(e => {
-        throw new Error(`Network error: ${e.message}. Is the backend running and accessible at http://localhost:3001?`);
+        throw new Error(`Network error: ${e.message}. Is the backend running and accessible?`);
       });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response.' }))

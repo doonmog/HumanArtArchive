@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
   res.json({ message: 'Backend is running' });
 });
 
-app.get('/api/db-test', async (req, res) => {
+app.get('/db-test', async (req, res) => {
   try {
     const client = await pool.connect();
     const result = await client.query('SELECT NOW()');
