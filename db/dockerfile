@@ -1,0 +1,10 @@
+FROM postgres:13
+
+ENV POSTGRES_DB=db
+
+# Passwords stored under .env
+COPY .env /app/.env
+
+COPY init.sql /docker-entrypoint-initdb.d/
+
+EXPOSE 5432

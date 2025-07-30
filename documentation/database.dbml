@@ -1,0 +1,55 @@
+// DBML database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table artist {
+  artist_id integer [pk]
+  name string [unique]
+  bio string
+}
+
+Table artwork {
+  artwork_id integer [pk]
+  artist_id integer [ref: > artist.artist_id]
+  artwork_name string
+  year integer
+  description string
+}
+
+Table image {
+  image_id integer [pk]
+  artwork_id integer [ref: > artwork.artwork_id]
+  image file
+  filesize integer
+  resolution string
+  display_order integer
+}
+
+Table category {
+  category_id integer [pk]
+  name string [unique]
+  description string
+}
+
+Table tag_group {
+  group_id integer [pk]
+  category_id integer [ref: > category.category_id]
+  name string
+  description string
+}
+
+Table tag {
+  tag_id integer [pk]
+  group_id integer [ref: > tag_group.group_id]
+  name string
+  description string
+}
+
+Table image_tags {
+  image_id integer [ref: > image.image_id]
+  tag_id integer [ref: > tag.tag_id]
+
+  Indexes {
+    (image_id, tag_id) [pk]
+  }
+}
+

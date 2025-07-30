@@ -1,0 +1,20 @@
+# About the project
+This is a Docker/Nuxt/PostgreSQL/Rest API project for an online nartwork archive.
+
+# Conversational Rules
+Do not suggest any commands to start/stop the application. I will start the application myself and give you feedback.
+
+# Code Generation Rules
+Do not add comments that show what features have been changed. If you add a comment, it should describe a function or line of code, it should never show what change was made.
+
+## Front-End Code (under /front)
+We are using the following nuxt packages:
+- @nuxt/icon (Default to using icons from this)
+- @nuxt/image (``nuxt-img`` replaces the native ``img`` element)
+- @nuxt/ui (Default to using simple Reka UI and Tailwind CSS rules)
+
+## Back-End Code (under /back)
+We are using Node.js and the back-end code is defined in the file ``/back/server.js``
+
+## Database (under /db)
+We are using PostgreSQL and the database schema is defined in the file ``/db/init.sql``
