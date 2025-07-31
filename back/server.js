@@ -19,6 +19,18 @@ app.get('/', (req, res) => {
   res.json({ message: 'Backend is running' });
 });
 
+// GET /artworks
+app.get('/artworks', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM artwork');
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 app.use('/db-test', dbTestRoutes(pool));
 
 app.listen(port, () => {
