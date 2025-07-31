@@ -35,6 +35,11 @@ async function fetchArtworks() {
     loading.value = false
   }
 }
+
+function handleImageError(event) {
+  console.error('Failed to load image:', event.target.src)
+  event.target.style.display = 'none'
+}
 </script>
 
 <template>
@@ -56,16 +61,26 @@ async function fetchArtworks() {
     
     <div v-if="artworks.length > 0" style="margin-top: 2rem;">
       <h2>Artworks ({{ artworks.length }})</h2>
-      <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+      <div style="display: grid; gap: 2rem; margin-top: 1rem;">
         <div 
           v-for="artwork in artworks" 
-          :key="artwork.id"
-          style="padding: 1rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;"
+          :key="artwork.artwork_id"
+          style="padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9; display: flex; gap: 1.5rem;"
         >
-          <h3>{{ artwork.title || 'Untitled' }}</h3>
-          <p><strong>Artist:</strong> {{ artwork.artist || 'Unknown' }}</p>
-          <p v-if="artwork.year"><strong>Year:</strong> {{ artwork.year }}</p>
-          <p v-if="artwork.description"><strong>Description:</strong> {{ artwork.description }}</p>
+          <div v-if="artwork.has_image" style="flex-shrink: 0;">
+            <img 
+              :src="`/api/image/${artwork.artwork_id}`" 
+              :alt="artwork.title || 'Untitled'"
+              style="width: 200px; height: 200px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc;"
+              @error="handleImageError"
+            />
+          </div>
+          <div style="flex: 1;">
+            <h3 style="margin-top: 0;">{{ artwork.title || 'Untitled' }}</h3>
+            <p><strong>Artist:</strong> {{ artwork.artist || 'Unknown' }}</p>
+            <p v-if="artwork.year"><strong>Year:</strong> {{ artwork.year }}</p>
+            <p v-if="artwork.description" style="margin-top: 1rem; line-height: 1.5;"><strong>Description:</strong> {{ artwork.description }}</p>
+          </div>
         </div>
       </div>
     </div>
