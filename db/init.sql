@@ -7,7 +7,7 @@ CREATE TABLE "artist" (
 CREATE TABLE "artwork" (
   "artwork_id" integer PRIMARY KEY,
   "artist_id" integer,
-  "artwork_name" TEXT,
+  "artwork_name" TEXT UNIQUE,
   "year" integer,
   "description" TEXT
 );
