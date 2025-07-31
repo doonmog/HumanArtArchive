@@ -22,8 +22,8 @@ services:
       - db
     ports:
       - "3001:3001"
-    environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/db
+    env_file:
+      - ./db/.env
     networks:
       - app-network
 
