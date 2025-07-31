@@ -9,6 +9,8 @@ const getTestRoutes = require('./test/get-test.js');
 const app = express();
 const port = 3001;
 
+app.set('trust proxy', 1);
+
 // Database connection
 const pool = new Pool({
   user: process.env.POSTGRES_USER,
