@@ -1,55 +1,66 @@
 // DBML database structure
 // Docs: https://dbml.dbdiagram.io/docs
 
-Table artist {
-  artist_id integer [pk]
-  name string [unique]
-  bio string
+Table "artist" {
+  "artist_id" UUID [pk, default: `gen_random_uuid()`]
+  "name" TEXT [unique]
+  "bio" TEXT
 }
 
-Table artwork {
-  artwork_id integer [pk]
-  artist_id integer [ref: > artist.artist_id]
-  artwork_name string
-  year integer
-  description string
+Table "artwork" {
+  "artwork_id" UUID [pk, default: `gen_random_uuid()`]
+  "artist_id" UUID
+  "artwork_name" TEXT [unique]
+  "year" integer
+  "description" TEXT
 }
 
-Table image {
-  image_id integer [pk]
-  artwork_id integer [ref: > artwork.artwork_id]
-  image file
-  filesize integer
-  resolution string
-  display_order integer
+Table "image" {
+  "image_id" UUID [pk, default: `gen_random_uuid()`]
+  "artwork_id" UUID
+  "image" BYTEA
+  "filesize" integer
+  "resolution" TEXT
+  "display_order" integer
 }
 
-Table category {
-  category_id integer [pk]
-  name string [unique]
-  description string
+Table "category" {
+  "category_id" UUID [pk, default: `gen_random_uuid()`]
+  "name" TEXT [unique]
+  "description" TEXT
 }
 
-Table tag_group {
-  group_id integer [pk]
-  category_id integer [ref: > category.category_id]
-  name string
-  description string
+Table "tag_group" {
+  "group_id" UUID [pk, default: `gen_random_uuid()`]
+  "category_id" UUID
+  "name" TEXT
+  "description" TEXT
 }
 
-Table tag {
-  tag_id integer [pk]
-  group_id integer [ref: > tag_group.group_id]
-  name string
-  description string
+Table "tag" {
+  "tag_id" UUID [pk, default: `gen_random_uuid()`]
+  "group_id" UUID
+  "name" TEXT
+  "description" TEXT
 }
 
-Table image_tags {
-  image_id integer [ref: > image.image_id]
-  tag_id integer [ref: > tag.tag_id]
+Table "image_tags" {
+  "image_id" UUID
+  "tag_id" UUID
 
   Indexes {
     (image_id, tag_id) [pk]
   }
 }
 
+Ref:"artist"."artist_id" < "artwork"."artist_id"
+
+Ref:"artwork"."artwork_id" < "image"."artwork_id"
+
+Ref:"category"."category_id" < "tag_group"."category_id"
+
+Ref:"tag_group"."group_id" < "tag"."group_id"
+
+Ref:"image"."image_id" < "image_tags"."image_id"
+
+Ref:"tag"."tag_id" < "image_tags"."tag_id"

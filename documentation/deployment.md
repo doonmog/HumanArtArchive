@@ -93,6 +93,7 @@ If you are using `ufw`:
 
 ```bash
 sudo ufw allow 'Nginx Full'
+sudo ufw allow ssh #(If you want to SSH in later)
 sudo ufw enable
 ```
 

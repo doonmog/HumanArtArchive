@@ -1,20 +1,22 @@
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE "artist" (
-  "artist_id" integer PRIMARY KEY,
+  "artist_id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "name" TEXT UNIQUE,
   "bio" TEXT
 );
 
 CREATE TABLE "artwork" (
-  "artwork_id" integer PRIMARY KEY,
-  "artist_id" integer,
+  "artwork_id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "artist_id" UUID,
   "artwork_name" TEXT UNIQUE,
   "year" integer,
   "description" TEXT
 );
 
 CREATE TABLE "image" (
-  "image_id" integer PRIMARY KEY,
-  "artwork_id" integer,
+  "image_id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "artwork_id" UUID,
   "image" BYTEA,
   "filesize" integer,
   "resolution" TEXT,
@@ -22,28 +24,28 @@ CREATE TABLE "image" (
 );
 
 CREATE TABLE "category" (
-  "category_id" integer PRIMARY KEY,
+  "category_id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "name" TEXT UNIQUE,
   "description" TEXT
 );
 
 CREATE TABLE "tag_group" (
-  "group_id" integer PRIMARY KEY,
-  "category_id" integer,
+  "group_id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "category_id" UUID,
   "name" TEXT,
   "description" TEXT
 );
 
 CREATE TABLE "tag" (
-  "tag_id" integer PRIMARY KEY,
-  "group_id" integer,
+  "tag_id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "group_id" UUID,
   "name" TEXT,
   "description" TEXT
 );
 
 CREATE TABLE "image_tags" (
-  "image_id" integer,
-  "tag_id" integer,
+  "image_id" UUID,
+  "tag_id" UUID,
   PRIMARY KEY ("image_id", "tag_id")
 );
 
