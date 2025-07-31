@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 
 const dbTestRoutes = require('./test/db-test.js');
 const getTestRoutes = require('./test/get-test.js');
+const tagTestRoutes = require('./test/tag-test.js');
 
 const app = express();
 const port = 3001;
@@ -48,6 +49,7 @@ app.get('/', (req, res) => {
 
 app.use('/db-test', dbTestRoutes(pool));
 app.use('/', getTestRoutes(pool));
+app.use('/', tagTestRoutes(pool));
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

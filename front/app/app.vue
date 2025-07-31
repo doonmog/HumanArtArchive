@@ -2,13 +2,16 @@
 import { ref } from 'vue'
 
 const artworks = ref([])
+const artworkTags = ref({})
 const error = ref('')
 const loading = ref(false)
+const loadingTags = ref(false)
 
 async function fetchArtworks() {
   loading.value = true
   error.value = ''
   artworks.value = []
+  artworkTags.value = {}
   
   try {
     const response = await fetch('/api/artworks')
@@ -25,6 +28,9 @@ async function fetchArtworks() {
     try {
       const data = JSON.parse(responseText)
       artworks.value = data
+      
+      // Fetch tags for each artwork
+      await fetchAllTags()
     } catch (jsonError) {
       throw new Error(`Invalid JSON response: ${responseText.substring(0, 200)}...`)
     }
@@ -33,6 +39,34 @@ async function fetchArtworks() {
     error.value = e.message
   } finally {
     loading.value = false
+  }
+}
+
+async function fetchAllTags() {
+  loadingTags.value = true
+  
+  try {
+    for (const artwork of artworks.value) {
+      await fetchTagsForArtwork(artwork.artwork_id)
+    }
+  } catch (e) {
+    console.error('Error fetching tags:', e)
+  } finally {
+    loadingTags.value = false
+  }
+}
+
+async function fetchTagsForArtwork(artworkId) {
+  try {
+    const response = await fetch(`/api/tags/${artworkId}`)
+    const data = await response.json()
+    
+    if (response.ok) {
+      artworkTags.value[artworkId] = data.tags || []
+    }
+  } catch (e) {
+    console.error(`Error fetching tags for artwork ${artworkId}:`, e)
+    artworkTags.value[artworkId] = []
   }
 }
 
@@ -80,6 +114,25 @@ function handleImageError(event) {
             <p><strong>Artist:</strong> {{ artwork.artist || 'Unknown' }}</p>
             <p v-if="artwork.year"><strong>Year:</strong> {{ artwork.year }}</p>
             <p v-if="artwork.description" style="margin-top: 1rem; line-height: 1.5;"><strong>Description:</strong> {{ artwork.description }}</p>
+            
+            <!-- Tags Section -->
+            <div v-if="artworkTags[artwork.artwork_id]" style="margin-top: 1rem;">
+              <h4 style="margin-bottom: 0.5rem; color: #333;">Tags:</h4>
+              <div v-if="loadingTags" style="color: #666; font-style: italic;">Loading tags...</div>
+              <div v-else-if="artworkTags[artwork.artwork_id].length === 0" style="color: #666; font-style: italic;">No tags found</div>
+              <div v-else style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                <div 
+                  v-for="tag in artworkTags[artwork.artwork_id]" 
+                  :key="`${tag.category}-${tag.tag_group}-${tag.tag}`"
+                  style="display: inline-block; padding: 0.25rem 0.5rem; background-color: #e0e7ff; border: 1px solid #c7d2fe; border-radius: 4px; font-size: 0.875rem;"
+                  :title="tag.tag_description"
+                >
+                  <span style="font-weight: bold; color: #4338ca;">{{ tag.category }}</span> >
+                  <span style="color: #6366f1;">{{ tag.tag_group }}</span> >
+                  <span style="color: #1e40af;">{{ tag.tag }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
