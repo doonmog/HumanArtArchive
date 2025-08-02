@@ -11,9 +11,8 @@ Try to keep files under 250 lines of code each. Put functions into other files a
 
 ## Front-End Code (under /front)
 We are using the following nuxt packages:
-- @nuxt/icon (Default to using icons from this)
-- @nuxt/image (``nuxt-img`` replaces the native ``img`` element)
-- @nuxt/ui (Default to using simple Reka UI and Tailwind CSS rules)
+- @nuxt/image (Always use ``nuxt-img`` instead of the native ``img`` element)
+- @nuxt/ui (Default to using simple Reka UI and Tailwind CSS rules and icons from this package)
 
 All front-end API calls must use relative paths (e.g., /api/endpoint) instead of absolute URLs. This is to ensure they are correctly routed by the Nginx reverse proxy in the production environment.
 
