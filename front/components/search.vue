@@ -28,7 +28,6 @@
           :padded="false"
           class="text-gray-400 hover:text-gray-600"
         >
-          <UIcon name="i-heroicons-solid:magnifying-glass" class="h-4 w-4" />
         </UButton>
       </template>
     </UInput>
