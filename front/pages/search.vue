@@ -50,10 +50,11 @@
     </div>
 
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-      <div
+      <NuxtLink
         v-for="artwork in artworks"
         :key="artwork.artwork_id"
-        class="artwork-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden relative group"
+        :to="`/artwork?id=${artwork.artwork_id}`"
+        class="artwork-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden relative group cursor-pointer hover:scale-105"
       >
         <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
           <nuxt-img
@@ -83,7 +84,7 @@
             </p>
           </div>
         </div>
-      </div>
+      </NuxtLink>
     </div>
 
     <div v-if="artworks && artworks.length > 0" class="mt-8 text-center">

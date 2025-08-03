@@ -8,6 +8,7 @@ const getTestRoutes = require('./test/get-test.js');
 const tagTestRoutes = require('./test/tag-test.js');
 const getArtRoutes = require('./user/get-art.js');
 const getImageRoutes = require('./user/get-image.js');
+const getArtworkDetailsRoutes = require('./user/get-artwork-details.js');
 
 const app = express();
 const port = 3001;
@@ -57,6 +58,7 @@ app.use('/', getTestRoutes(pool));
 app.use('/', tagTestRoutes(pool));
 app.use('/', getArtRoutes(pool));
 app.use('/', getImageRoutes(pool));
+app.use('/', getArtworkDetailsRoutes(pool));
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
