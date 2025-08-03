@@ -1,25 +1,30 @@
 const express = require('express');
+const { parseSearchQuery } = require('../searchParser');
 
 module.exports = (pool) => {
   const router = express.Router();
 
-  // GET /art?tags=tag1,tag2 - Find artwork by tags
+  // GET /art?q=search_query - Find artwork using search syntax
+  // Also supports legacy ?tags=tag1,tag2 for backward compatibility
   router.get('/art', async (req, res) => {
     try {
-      const { tags } = req.query;
+      const { q, tags } = req.query;
       
-      if (!tags) {
-        return res.status(400).json({ error: 'Tags parameter is required' });
+      let searchQuery = '';
+      
+      if (q) {
+        searchQuery = q;
+      } else if (tags) {
+        // Convert legacy tags format to search syntax
+        const tagArray = tags.split(',').map(tag => tag.trim());
+        searchQuery = tagArray.join(' AND ');
+      } else {
+        return res.status(400).json({ 
+          error: 'Either q (search query) or tags parameter is required' 
+        });
       }
       
-      const tagArray = tags.split(',').map(tag => tag.trim().toLowerCase());
-      
-      if (tagArray.length === 0) {
-        return res.status(400).json({ error: 'At least one tag must be provided' });
-      }
-      
-      // Create placeholders for the IN clause
-      const placeholders = tagArray.map((_, index) => `$${index + 1}`).join(',');
+      const { whereClause, parameters } = parseSearchQuery(searchQuery);
       
       const { rows } = await pool.query(`
         SELECT DISTINCT
@@ -32,23 +37,23 @@ module.exports = (pool) => {
         FROM artwork a
         LEFT JOIN artist ar ON a.artist_id = ar.artist_id
         LEFT JOIN image i ON a.artwork_id = i.artwork_id AND i.display_order = 1
-        WHERE a.artwork_id IN (
-          SELECT DISTINCT i2.artwork_id
-          FROM image i2
-          JOIN image_tags it ON i2.image_id = it.image_id
-          JOIN tag t ON it.tag_id = t.tag_id
-          WHERE LOWER(t.name) IN (${placeholders})
-        )
+        WHERE ${whereClause}
         ORDER BY a.artwork_id
-      `, tagArray);
+      `, parameters);
       
       res.json({
-        message: `Found ${rows.length} artwork(s) with tags: ${tags}`,
+        message: `Found ${rows.length} artwork(s) matching query: ${searchQuery}`,
+        query: searchQuery,
         artworks: rows
       });
     } catch (err) {
-      console.error('Error searching artwork by tags:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Error searching artwork:', err);
+      
+      if (err.message.includes('Search syntax error')) {
+        res.status(400).json({ error: err.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
     }
   });
 

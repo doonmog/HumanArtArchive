@@ -84,7 +84,7 @@ async function fetchArtworksByTag() {
   femaleArtworks.value = []
   
   try {
-    const response = await fetch('/api/art?tags=female')
+    const response = await fetch('/api/art?q=female')
     const responseText = await response.text()
     
     if (!response.ok) {
