@@ -1,5 +1,13 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+CREATE TABLE "admin" (
+  "admin_id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "username" TEXT UNIQUE NOT NULL,
+  "password_hash" TEXT NOT NULL,
+  "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  "last_login" TIMESTAMP
+);
+
 CREATE TABLE "artist" (
   "artist_id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "name" TEXT UNIQUE,

@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../db/.env') });
 
 const dbTestRoutes = require('./test/db-test.js');
 const getTestRoutes = require('./test/get-test.js');
@@ -9,6 +11,7 @@ const tagTestRoutes = require('./test/tag-test.js');
 const getArtRoutes = require('./user/get-art.js');
 const getImageRoutes = require('./user/get-image.js');
 const getArtworkDetailsRoutes = require('./user/get-artwork-details.js');
+const authRoutes = require('./auth/auth.js');
 
 const app = express();
 const port = 3001;
@@ -59,6 +62,7 @@ app.use('/', tagTestRoutes(pool));
 app.use('/', getArtRoutes(pool));
 app.use('/', getImageRoutes(pool));
 app.use('/', getArtworkDetailsRoutes(pool));
+app.use('/auth', authRoutes(pool));
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
