@@ -12,17 +12,15 @@ module.exports = (pool) => {
       
       let searchQuery = '';
       
-      if (q) {
+      if (q !== undefined) {
         searchQuery = q;
       } else if (tags) {
         // Convert legacy tags format to search syntax
         const tagArray = tags.split(',').map(tag => tag.trim());
         searchQuery = tagArray.join(' AND ');
-      } else {
-        return res.status(400).json({ 
-          error: 'Either q (search query) or tags parameter is required' 
-        });
       }
+      // If no search parameters provided, searchQuery remains empty string
+      // which will return all artwork
       
       const { whereClause, parameters } = parseSearchQuery(searchQuery);
       

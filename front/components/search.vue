@@ -28,8 +28,6 @@ import { navigateTo } from 'nuxt/app'
 const searchQuery = ref('')
 
 const handleSearch = () => {
-  if (searchQuery.value.trim()) {
-    navigateTo(`/search?q=${encodeURIComponent(searchQuery.value.trim())}`)
-  }
+  navigateTo(`/search?q=${encodeURIComponent(searchQuery.value.trim())}`)
 }
 </script>

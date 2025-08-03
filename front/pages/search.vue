@@ -104,10 +104,6 @@ const pending = ref(false)
 const error = ref(null)
 
 const fetchResults = async (searchQuery) => {
-  if (!searchQuery) {
-    searchResults.value = null
-    return
-  }
   
   try {
     pending.value = true
@@ -129,9 +125,7 @@ const refresh = () => fetchResults(query.value)
 const artworks = computed(() => searchResults.value?.artworks || [])
 
 // Initial fetch
-if (query.value) {
-  await fetchResults(query.value)
-}
+await fetchResults(query.value)
 
 // Watch for query changes
 watch(query, (newQuery) => {
@@ -142,11 +136,7 @@ useHead({
   title: query.value ? `Search: ${query.value}` : 'Search Results'
 })
 
-watch(query, (newQuery) => {
-  if (!newQuery) {
-    navigateTo('/')
-  }
-})
+
 </script>
 
 <style scoped>
