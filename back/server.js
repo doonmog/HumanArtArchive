@@ -12,6 +12,7 @@ const getArtRoutes = require('./user/get-art.js');
 const getImageRoutes = require('./user/get-image.js');
 const getArtworkDetailsRoutes = require('./user/get-artwork-details.js');
 const authRoutes = require('./auth/auth.js');
+const uploadArtworkRoutes = require('./admin/upload-artwork.js');
 
 const app = express();
 const port = 3001;
@@ -63,6 +64,7 @@ app.use('/', getArtRoutes(pool));
 app.use('/', getImageRoutes(pool));
 app.use('/', getArtworkDetailsRoutes(pool));
 app.use('/auth', authRoutes(pool));
+app.use('/admin', uploadArtworkRoutes(pool));
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

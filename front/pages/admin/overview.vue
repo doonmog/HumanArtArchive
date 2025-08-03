@@ -17,8 +17,8 @@
                   <h3 class="text-lg font-semibold">Upload Artwork</h3>
                 </template>
                 <p class="text-gray-600 mb-4">Add new artwork to the archive</p>
-                <UButton disabled variant="outline" class="w-full">
-                  Coming Soon
+                <UButton to="/admin/upload" variant="outline" class="w-full">
+                  Upload Now
                 </UButton>
               </UCard>
               
