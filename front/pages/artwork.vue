@@ -39,10 +39,10 @@
           </button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="flex flex-col gap-8">
           <!-- Image section -->
-          <div class="space-y-4">
-            <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+          <div class="space-y-4 max-w-4xl mx-auto w-full">
+            <div class="bg-gray-100 rounded-lg overflow-hidden">
               <nuxt-img
                 v-if="artwork.has_image"
                 :src="`/api/image/${artwork.artwork_id}`"
@@ -60,7 +60,7 @@
           </div>
 
           <!-- Details section -->
-          <div class="space-y-6">
+          <div class="space-y-6 max-w-4xl mx-auto w-full">
             <!-- Title and basic info -->
             <div>
               <h1 class="text-3xl font-bold text-black mb-2">
