@@ -10,9 +10,17 @@
           <Search />
         </div>
         
-        <NuxtLink to="/about" class="text-gray-600 hover:text-gray-800">
-          About
-        </NuxtLink>
+        <div class="flex gap-4">
+          <NuxtLink to="/help" class="text-gray-600 hover:text-gray-800">
+            Help
+          </NuxtLink>
+          <NuxtLink to="/advanced" class="text-gray-600 hover:text-gray-800">
+            Advanced Search
+          </NuxtLink>
+          <NuxtLink to="/about" class="text-gray-600 hover:text-gray-800">
+            About
+          </NuxtLink>
+        </div>
       </nav>
     </div>
   </header>

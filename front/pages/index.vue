@@ -5,6 +5,9 @@ import Search from '../components/search.vue'
 
 <template>
   <div class="flex flex-col items-center justify-center min-h-screen px-4">
+    <h1 class="text-5xl font-bold text-gray-800 mb-8 text-center">
+      Human Art Archive
+    </h1>
     <div class="flex justify-center w-full">
       <Search />
     </div>
