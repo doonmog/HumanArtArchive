@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const dbTestRoutes = require('./test/db-test.js');
 const getTestRoutes = require('./test/get-test.js');
 const tagTestRoutes = require('./test/tag-test.js');
+const getArtRoutes = require('./user/get-art.js');
 
 const app = express();
 const port = 3001;
@@ -45,11 +46,15 @@ app.get('/', (req, res) => {
   res.json({ message: 'Backend is running' });
 });
 
-
-
+// IMPORTANT: Route mounting for Nuxt proxy compatibility
+// The Nuxt frontend has proxy rule: '/api/**': { proxy: 'http://back:3001/**' }
+// This strips '/api' from requests before forwarding to backend.
+// Example: Frontend calls '/api/art' -> Backend receives '/art'
+// Therefore, all API routes must be mounted at root ('/') not '/api'
 app.use('/db-test', dbTestRoutes(pool));
 app.use('/', getTestRoutes(pool));
 app.use('/', tagTestRoutes(pool));
+app.use('/', getArtRoutes(pool));
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

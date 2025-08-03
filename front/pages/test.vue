@@ -7,6 +7,8 @@ const artworkTags = ref({})
 const error = ref('')
 const loading = ref(false)
 const loadingTags = ref(false)
+const femaleArtworks = ref([])
+const loadingFemale = ref(false)
 
 async function fetchArtworks() {
   loading.value = true
@@ -75,6 +77,37 @@ function handleImageError(event) {
   console.error('Failed to load image:', event.target.src)
   event.target.style.display = 'none'
 }
+
+async function fetchArtworksByTag() {
+  loadingFemale.value = true
+  error.value = ''
+  femaleArtworks.value = []
+  
+  try {
+    const response = await fetch('/api/art?tags=female')
+    const responseText = await response.text()
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${responseText}`)
+    }
+    
+    if (!responseText.trim()) {
+      throw new Error('Empty response from server')
+    }
+    
+    try {
+      const data = JSON.parse(responseText)
+      femaleArtworks.value = data.artworks || []
+    } catch (jsonError) {
+      throw new Error(`Invalid JSON response: ${responseText.substring(0, 200)}...`)
+    }
+  } catch (e) {
+    console.error('Fetch error:', e)
+    error.value = e.message
+  } finally {
+    loadingFemale.value = false
+  }
+}
 </script>
 
 <template>
@@ -85,9 +118,17 @@ function handleImageError(event) {
     <button 
       @click="fetchArtworks" 
       :disabled="loading"
-      style="padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer;"
+      style="padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; margin-right: 1rem;"
     >
       {{ loading ? 'Loading...' : 'Fetch Artworks' }}
+    </button>
+    
+    <button 
+      @click="fetchArtworksByTag" 
+      :disabled="loadingFemale"
+      style="padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; background-color: #4338ca; color: white; border: none; border-radius: 4px;"
+    >
+      {{ loadingFemale ? 'Loading...' : 'Search Female Tag' }}
     </button>
     
     <div v-if="error" style="margin-top: 1rem; padding: 1rem; background-color: #ffe0e0; border: 1px solid #c0a0a0;">
@@ -139,8 +180,38 @@ function handleImageError(event) {
       </div>
     </div>
     
-    <div v-else-if="!loading && !error" style="margin-top: 2rem; color: #666;">
-      <p>No artworks loaded yet. Click "Fetch Artworks" to load data.</p>
+    <!-- Female Tag Search Results -->
+    <div v-if="femaleArtworks.length > 0" style="margin-top: 2rem;">
+      <h2>Artworks with "Female" Tag ({{ femaleArtworks.length }})</h2>
+      <div style="display: grid; gap: 2rem; margin-top: 1rem;">
+        <div 
+          v-for="artwork in femaleArtworks" 
+          :key="'female-' + artwork.artwork_id"
+          style="padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; background-color: #f0f9ff; display: flex; gap: 1.5rem;"
+        >
+          <div v-if="artwork.has_image" style="flex-shrink: 0;">
+            <img 
+              :src="`/api/image/${artwork.artwork_id}`" 
+              :alt="artwork.title || 'Untitled'"
+              style="width: 200px; height: 200px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc;"
+              @error="handleImageError"
+            />
+          </div>
+          <div style="flex: 1;">
+            <h3 style="margin-top: 0;">{{ artwork.title || 'Untitled' }}</h3>
+            <p><strong>Artist:</strong> {{ artwork.artist || 'Unknown' }}</p>
+            <p v-if="artwork.year"><strong>Year:</strong> {{ artwork.year }}</p>
+            <p v-if="artwork.description" style="margin-top: 1rem; line-height: 1.5;"><strong>Description:</strong> {{ artwork.description }}</p>
+            <div style="margin-top: 1rem; padding: 0.5rem; background-color: #dbeafe; border-radius: 4px;">
+              <strong style="color: #1e40af;">Filtered by: female tag</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div v-else-if="!loading && !loadingFemale && !error" style="margin-top: 2rem; color: #666;">
+      <p>No artworks loaded yet. Click "Fetch Artworks" to load all data or "Search Female Tag" to find artwork with the female tag.</p>
     </div>
   </div>
 </template>
