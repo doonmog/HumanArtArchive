@@ -12,12 +12,13 @@ Try to keep files under 250 lines of code each. Put functions into other files a
 ## Front-End Code (under /front)
 We are using the following nuxt packages:
 - @nuxt/image (Always use ``nuxt-img`` instead of the native ``img`` element)
-- @nuxt/ui (Default to using simple Reka UI and Tailwind CSS rules and icons from this package)
+- @nuxt/tailwindcss (Default to using Tailwind CSS rules and icons from this package) (@nuxt/ui is NOT installed. Do not refer to it.)
 
 All front-end API calls must use relative paths (e.g., /api/endpoint) instead of absolute URLs. This is to ensure they are correctly routed by the Nginx reverse proxy in the production environment.
 
 ## Back-End Code (under /back)
 We are using Node.js and the back-end code is defined in the file ``/back/server.js``
+Authentication rules can be found under ``back/auth/auth.js`` and ``front/middleware/admin-auth.js``
 
 ## Database (under /db)
 We are using PostgreSQL and the database schema is defined in the file ``/db/init.sql``

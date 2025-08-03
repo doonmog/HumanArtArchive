@@ -12,5 +12,6 @@ COPY seed/seed.sql /docker-entrypoint-initdb.d/
 COPY seed/mona-lisa.jpg /docker-entrypoint-initdb.d/seed-data/
 COPY seed/the-last-supper.jpg /docker-entrypoint-initdb.d/seed-data/
 COPY seed/vitruvian-man.jpg /docker-entrypoint-initdb.d/seed-data/
+COPY seed/creation-of-adam.jpg /docker-entrypoint-initdb.d/seed-data/
 
 EXPOSE 5432
