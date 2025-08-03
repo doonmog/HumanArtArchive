@@ -1,17 +1,39 @@
 
 <script setup>
-import { ref } from 'vue'
-import Header from '../components/header.vue'
-
-const title = ref('Human Art Archive')
+import Search from '../components/search.vue'
 </script>
 
 <template>
-  <div>
-    <Header />
-    <div class="flex flex-col items-center justify-center min-h-screen">
-      <h1 class="text-6xl font-bold">Human Art Archive</h1>
-      <NuxtLink to="/test" class="mt-8 text-xl text-blue-500 hover:underline">Go to Test Page</NuxtLink>
+  <div class="flex flex-col items-center justify-center min-h-screen px-4">
+    <div class="flex justify-center w-full">
+      <Search />
+    </div>
+    
+    <div class="mt-8 flex gap-6">
+      <NuxtLink 
+        to="/search?q=" 
+        class="text-lg text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+      >
+        View all art
+      </NuxtLink>
+      <NuxtLink 
+        to="/help" 
+        class="text-lg text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+      >
+        Help
+      </NuxtLink>
+      <NuxtLink 
+        to="/advanced" 
+        class="text-lg text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+      >
+        Advanced Search
+      </NuxtLink>
+      <NuxtLink 
+        to="/about" 
+        class="text-lg text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+      >
+        About
+      </NuxtLink>
     </div>
   </div>
 </template>
