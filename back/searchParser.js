@@ -234,9 +234,6 @@ class SearchParser {
   }
 
   generateTagSQL(tagValue) {
-    this.parameters.push(tagValue);
-    const paramIndex = this.parameters.length;
-    
     if (tagValue.includes('-')) {
       const [groupName, tagName] = tagValue.split('-', 2);
       this.parameters.push(groupName);
@@ -253,6 +250,8 @@ class SearchParser {
         WHERE LOWER(tg.name) = $${groupParamIndex} AND LOWER(t.name) = $${tagParamIndex}
       )`;
     } else {
+      this.parameters.push(tagValue);
+      const paramIndex = this.parameters.length;
       return `a.artwork_id IN (
         SELECT DISTINCT i2.artwork_id
         FROM image i2
