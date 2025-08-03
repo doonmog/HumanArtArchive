@@ -66,6 +66,8 @@ class SearchParser {
           tokens.push({ type: 'AND', value: 'AND' });
         } else if (upperValue === 'OR') {
           tokens.push({ type: 'OR', value: 'OR' });
+        } else if (upperValue === 'NOT') {
+          tokens.push({ type: 'NOT', value: 'NOT' });
         } else {
           tokens.push({ type: 'IDENTIFIER', value });
         }
@@ -115,6 +117,16 @@ class SearchParser {
     
     if (!token) {
       throw new Error('Unexpected end of query');
+    }
+    
+    if (token.type === 'NOT') {
+      this.position++;
+      const operand = this.parseTerm();
+      return {
+        type: 'UNARY_OP',
+        operator: 'NOT',
+        operand
+      };
     }
     
     if (token.type === 'LPAREN') {
@@ -205,6 +217,10 @@ class SearchParser {
         const left = this.generateSQL(ast.left);
         const right = this.generateSQL(ast.right);
         return `(${left} ${ast.operator} ${right})`;
+        
+      case 'UNARY_OP':
+        const operand = this.generateSQL(ast.operand);
+        return `NOT (${operand})`;
         
       case 'TAG_QUERY':
         return this.generateTagSQL(ast.value);
