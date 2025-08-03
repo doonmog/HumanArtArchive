@@ -53,7 +53,7 @@
       <div
         v-for="artwork in artworks"
         :key="artwork.artwork_id"
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden"
+        class="artwork-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden relative group"
       >
         <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
           <nuxt-img
@@ -69,18 +69,19 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-        </div>
-        
-        <div class="p-4">
-          <h3 class="font-semibold text-gray-900 dark:text-white text-sm mb-1 line-clamp-2">
-            {{ artwork.title }}
-          </h3>
-          <p v-if="artwork.artist" class="text-gray-600 dark:text-gray-400 text-xs mb-1">
-            {{ artwork.artist }}
-          </p>
-          <p v-if="artwork.year" class="text-gray-500 dark:text-gray-500 text-xs">
-            {{ artwork.year }}
-          </p>
+          
+          <!-- Artwork info overlay that slides up on hover -->
+          <div class="artwork-info absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
+            <h3 class="font-semibold text-white text-sm mb-1 line-clamp-2">
+              {{ artwork.title }}
+            </h3>
+            <p v-if="artwork.artist" class="text-gray-200 text-xs mb-1">
+              {{ artwork.artist }}
+            </p>
+            <p v-if="artwork.year" class="text-gray-300 text-xs">
+              {{ artwork.year }}
+            </p>
+          </div>
         </div>
       </div>
     </div>
