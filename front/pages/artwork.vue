@@ -155,6 +155,7 @@ import Header from '../components/header.vue'
 
 const route = useRoute()
 const artworkId = computed(() => route.query.id)
+const imageId = computed(() => route.query.image_id)
 
 const artwork = ref(null)
 const pending = ref(false)
@@ -223,11 +224,11 @@ const groupedTags = computed(() => {
 })
 
 // Initial fetch
-await fetchArtwork(artworkId.value)
+await fetchArtwork(artworkId.value, imageId.value)
 
 // Watch for ID changes
-watch(artworkId, (newId) => {
-  fetchArtwork(newId)
+watch([artworkId, imageId], ([newId, newImageId]) => {
+  fetchArtwork(newId, newImageId)
 }, { immediate: false })
 
 useHead({

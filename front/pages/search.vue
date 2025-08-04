@@ -53,7 +53,7 @@
       <NuxtLink
         v-for="artwork in artworks"
         :key="`${artwork.artwork_id}-${artwork.image_id || 'no-image'}`"
-        :to="`/artwork?id=${artwork.artwork_id}`"
+        :to="`/artwork?id=${artwork.artwork_id}${artwork.image_id ? `&image_id=${artwork.image_id}` : ''}`"
         class="artwork-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden relative group cursor-pointer hover:scale-105"
       >
         <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
