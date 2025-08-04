@@ -42,19 +42,31 @@ module.exports = (pool) => {
       artwork.images = imagesResult.rows;
       artwork.has_image = imagesResult.rows.length > 0 && imagesResult.rows.some(img => img.has_image);
       
-      const tagsResult = await pool.query(`
-        SELECT DISTINCT
-          t.name as tag_name,
-          tg.name as group_name
-        FROM image i
-        JOIN image_tags it ON i.image_id = it.image_id
-        JOIN tag t ON it.tag_id = t.tag_id
-        LEFT JOIN tag_group tg ON t.group_id = tg.group_id
-        WHERE i.artwork_id = $1
-        ORDER BY tg.name, t.name
-      `, [id]);
+      // Get tags for a specific image (if image_id provided) or the first image
+      const { image_id } = req.query;
+      let targetImageId = image_id;
+      
+      // If no specific image requested, use the first image
+      if (!targetImageId && artwork.images.length > 0) {
+        targetImageId = artwork.images[0].image_id;
+      }
+      
+      let tagsResult = { rows: [] };
+      if (targetImageId) {
+        tagsResult = await pool.query(`
+          SELECT DISTINCT
+            t.name as tag_name,
+            tg.name as group_name
+          FROM image_tags it
+          JOIN tag t ON it.tag_id = t.tag_id
+          LEFT JOIN tag_group tg ON t.group_id = tg.group_id
+          WHERE it.image_id = $1
+          ORDER BY tg.name, t.name
+        `, [targetImageId]);
+      }
 
       artwork.tags = tagsResult.rows;
+      artwork.current_image_id = targetImageId;
 
       res.json({
         success: true,

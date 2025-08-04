@@ -247,23 +247,21 @@ class SearchParser {
       const groupParamIndex = this.parameters.length - 1;
       const tagParamIndex = this.parameters.length;
       
-      return `a.artwork_id IN (
-        SELECT DISTINCT i2.artwork_id
-        FROM image i2
-        JOIN image_tags it ON i2.image_id = it.image_id
+      return `i2.image_id IN (
+        SELECT DISTINCT it.image_id
+        FROM image_tags it
         JOIN tag t ON it.tag_id = t.tag_id
         JOIN tag_group tg ON t.group_id = tg.group_id
-        WHERE LOWER(tg.name) = $${groupParamIndex} AND LOWER(t.name) = $${tagParamIndex}${displayOrderFilter}
+        WHERE LOWER(tg.name) = $${groupParamIndex} AND LOWER(t.name) = $${tagParamIndex}
       )`;
     } else {
       this.parameters.push(tagValue);
       const paramIndex = this.parameters.length;
-      return `a.artwork_id IN (
-        SELECT DISTINCT i2.artwork_id
-        FROM image i2
-        JOIN image_tags it ON i2.image_id = it.image_id
+      return `i2.image_id IN (
+        SELECT DISTINCT it.image_id
+        FROM image_tags it
         JOIN tag t ON it.tag_id = t.tag_id
-        WHERE LOWER(t.name) = $${paramIndex}${displayOrderFilter}
+        WHERE LOWER(t.name) = $${paramIndex}
       )`;
     }
   }
@@ -310,7 +308,7 @@ class SearchParser {
       case 'version':
         this.hasVersionFilter = true;
         if (value.toLowerCase() === 'primary') {
-          return `i.display_order = 1`;
+          return `i2.display_order = 1`;
         } else {
           throw new Error(`Unknown version value: ${value}. Use 'primary' for primary images.`);
         }

@@ -24,6 +24,32 @@ module.exports = (pool) => {
       
       const { whereClause, parameters } = parseSearchQuery(searchQuery);
       
+      // If no search query, return all artworks with all their images
+      if (searchQuery.trim() === '') {
+        const { rows } = await pool.query(`
+          SELECT DISTINCT
+            a.artwork_id,
+            a.artwork_name as title,
+            ar.name as artist,
+            a.year,
+            a.description,
+            i.image_id,
+            i.display_order,
+            CASE WHEN i.image_id IS NOT NULL THEN true ELSE false END as has_image
+          FROM artwork a
+          LEFT JOIN artist ar ON a.artist_id = ar.artist_id
+          LEFT JOIN image i ON a.artwork_id = i.artwork_id
+          ORDER BY a.artwork_id, i.display_order
+        `);
+        
+        return res.json({
+          message: `Found ${rows.length} artwork(s)`,
+          query: searchQuery,
+          artworks: rows
+        });
+      }
+      
+      // For searches, use the updated search parser that works at image level
       const { rows } = await pool.query(`
         SELECT DISTINCT
           a.artwork_id,
@@ -31,14 +57,14 @@ module.exports = (pool) => {
           ar.name as artist,
           a.year,
           a.description,
-          i.image_id,
-          i.display_order,
-          CASE WHEN i.image_id IS NOT NULL THEN true ELSE false END as has_image
+          i2.image_id,
+          i2.display_order,
+          CASE WHEN i2.image_id IS NOT NULL THEN true ELSE false END as has_image
         FROM artwork a
         LEFT JOIN artist ar ON a.artist_id = ar.artist_id
-        LEFT JOIN image i ON a.artwork_id = i.artwork_id
+        LEFT JOIN image i2 ON a.artwork_id = i2.artwork_id
         WHERE ${whereClause}
-        ORDER BY a.artwork_id, i.display_order
+        ORDER BY a.artwork_id, i2.display_order
       `, parameters);
       
       res.json({

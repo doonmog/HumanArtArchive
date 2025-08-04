@@ -161,7 +161,7 @@ const pending = ref(false)
 const error = ref(null)
 const currentImage = ref(null)
 
-const fetchArtwork = async (id) => {
+const fetchArtwork = async (id, imageId = null) => {
   if (!id) {
     error.value = { message: 'No artwork ID provided' }
     return
@@ -170,11 +170,22 @@ const fetchArtwork = async (id) => {
   try {
     pending.value = true
     error.value = null
-    const response = await $fetch(`/api/artwork/${id}`)
+    
+    let url = `/api/artwork/${id}`
+    if (imageId) {
+      url += `?image_id=${imageId}`
+    }
+    
+    const response = await $fetch(url)
     artwork.value = response.artwork
-    // Set the first image as current by default
+    
+    // Set the current image based on the response or default to first
     if (artwork.value.images && artwork.value.images.length > 0) {
-      currentImage.value = artwork.value.images[0]
+      if (imageId) {
+        currentImage.value = artwork.value.images.find(img => img.image_id === imageId) || artwork.value.images[0]
+      } else {
+        currentImage.value = artwork.value.images[0]
+      }
     }
   } catch (err) {
     error.value = err.data || err
@@ -185,8 +196,10 @@ const fetchArtwork = async (id) => {
   }
 }
 
-const selectImage = (image) => {
+const selectImage = async (image) => {
   currentImage.value = image
+  // Fetch tags for the selected image
+  await fetchArtwork(artworkId.value, image.image_id)
 }
 
 const groupedTags = computed(() => {
