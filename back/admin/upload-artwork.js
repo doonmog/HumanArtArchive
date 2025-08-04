@@ -9,7 +9,8 @@ const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+    files: 10 // Max 10 images per artwork
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -57,17 +58,30 @@ module.exports = (pool) => {
     next();
   });
 
-  router.post('/upload-artwork', verifyAdminToken, upload.single('image'), async (req, res) => {
+  router.post('/upload-artwork', verifyAdminToken, upload.array('images', 10), async (req, res) => {
     const client = await pool.connect();
     
     try {
       await client.query('BEGIN');
 
-      const { artworkName, artistName, year, description } = req.body;
-      const imageFile = req.file;
+      const { artworkName, artistName, year, description, imageOrder } = req.body;
+      const imageFiles = req.files;
 
-      if (!artworkName || !imageFile) {
-        return res.status(400).json({ message: 'Artwork name and image are required' });
+      if (!artworkName || !imageFiles || imageFiles.length === 0) {
+        return res.status(400).json({ message: 'Artwork name and at least one image are required' });
+      }
+
+      // Parse image order if provided
+      let orderArray = [];
+      if (imageOrder) {
+        try {
+          orderArray = JSON.parse(imageOrder);
+        } catch (e) {
+          // If parsing fails, use default order
+          orderArray = imageFiles.map((_, index) => index);
+        }
+      } else {
+        orderArray = imageFiles.map((_, index) => index);
       }
 
       let artistId = null;
@@ -95,20 +109,27 @@ module.exports = (pool) => {
 
       const artworkId = artworkResult.rows[0].artwork_id;
 
-      const imageBuffer = imageFile.buffer;
-      const fileSize = imageFile.size;
-      const resolution = `${imageFile.originalname}`;
+      // Insert all images with their display order
+      for (let i = 0; i < imageFiles.length; i++) {
+        const imageFile = imageFiles[i];
+        const displayOrder = orderArray[i] !== undefined ? orderArray[i] + 1 : i + 1;
+        
+        const imageBuffer = imageFile.buffer;
+        const fileSize = imageFile.size;
+        const resolution = `${imageFile.originalname}`;
 
-      await client.query(
-        'INSERT INTO image (artwork_id, image, filesize, resolution, display_order) VALUES ($1, $2, $3, $4, $5)',
-        [artworkId, imageBuffer, fileSize, resolution, 1]
-      );
+        await client.query(
+          'INSERT INTO image (artwork_id, image, filesize, resolution, display_order) VALUES ($1, $2, $3, $4, $5)',
+          [artworkId, imageBuffer, fileSize, resolution, displayOrder]
+        );
+      }
 
       await client.query('COMMIT');
 
       res.json({ 
-        message: 'Artwork uploaded successfully',
-        artworkId: artworkId
+        message: `Artwork uploaded successfully with ${imageFiles.length} image(s)`,
+        artworkId: artworkId,
+        imageCount: imageFiles.length
       });
 
     } catch (error) {
