@@ -56,12 +56,14 @@ module.exports = (pool) => {
         tagsResult = await pool.query(`
           SELECT DISTINCT
             t.name as tag_name,
-            tg.name as group_name
+            tg.name as group_name,
+            c.name as category
           FROM image_tags it
           JOIN tag t ON it.tag_id = t.tag_id
           LEFT JOIN tag_group tg ON t.group_id = tg.group_id
+          LEFT JOIN category c ON tg.category_id = c.category_id
           WHERE it.image_id = $1
-          ORDER BY tg.name, t.name
+          ORDER BY c.name, tg.name, t.name
         `, [targetImageId]);
       }
 

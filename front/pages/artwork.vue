@@ -120,27 +120,7 @@
             </div>
 
             <!-- Tags -->
-            <div v-if="artwork.tags && artwork.tags.length > 0" class="space-y-3">
-              <h3 class="text-lg font-semibold text-black">Tags</h3>
-              <div class="space-y-2">
-                <template v-for="group in groupedTags" :key="group.name">
-                  <div v-if="group.tags.length > 0">
-                    <h4 v-if="group.name" class="text-sm font-medium text-black mb-1">
-                      {{ group.name }}
-                    </h4>
-                    <div class="flex flex-wrap gap-2">
-                      <span
-                        v-for="tag in group.tags"
-                        :key="tag.tag_name"
-                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                      >
-                        {{ tag.tag_name }}
-                      </span>
-                    </div>
-                  </div>
-                </template>
-              </div>
-            </div>
+            <ArtworkTags v-if="artwork.tags && artwork.tags.length > 0" :tags="artwork.tags" />
 
 
           </div>
@@ -152,6 +132,7 @@
 
 <script setup>
 import Header from '../components/header.vue'
+import ArtworkTags from '../components/artwork_tags.vue'
 
 const route = useRoute()
 const artworkId = computed(() => route.query.id)
