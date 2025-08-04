@@ -12,6 +12,8 @@ DECLARE
     vitruvian_man_id UUID;
     creation_of_adam_id UUID;
     mona_lisa_image_id UUID;
+    mona_lisa_gioconda_image_id UUID;
+    mona_lisa_simpsons_image_id UUID;
     last_supper_image_id UUID;
     vitruvian_man_image_id UUID;
     creation_of_adam_image_id UUID;
@@ -20,6 +22,7 @@ DECLARE
     content_category_id UUID;
     landscape_group_id UUID;
     portrait_group_id UUID;
+    style_group_id UUID;
     gender_group_id UUID;
     hair_group_id UUID;
     medium_group_id UUID;
@@ -37,6 +40,7 @@ DECLARE
     bust_portrait_tag_id UUID;
     full_length_portrait_tag_id UUID;
     profile_portrait_tag_id UUID;
+    cartoon_tag_id UUID;
 BEGIN
     -- 1. Add artists to the artists table and get the generated IDs
     INSERT INTO artist (name, bio) VALUES 
@@ -62,11 +66,15 @@ BEGIN
     -- 3. Add images for the artworks using the retrieved artwork_ids
     INSERT INTO image (artwork_id, image, filesize, resolution, display_order) VALUES
     (mona_lisa_id, pg_read_binary_file('/docker-entrypoint-initdb.d/seed-data/mona-lisa.jpg'), 0, '0x0', 1),
+    (mona_lisa_id, pg_read_binary_file('/docker-entrypoint-initdb.d/seed-data/mona-lisa-gioconda.jpg'), 0, '0x0', 2),
+    (mona_lisa_id, pg_read_binary_file('/docker-entrypoint-initdb.d/seed-data/mona-lisa-simpsons.jpg'), 0, '0x0', 3),
     (last_supper_id, pg_read_binary_file('/docker-entrypoint-initdb.d/seed-data/the-last-supper.jpg'), 0, '0x0', 1),
     (vitruvian_man_id, pg_read_binary_file('/docker-entrypoint-initdb.d/seed-data/vitruvian-man.jpg'), 0, '0x0', 1),
     (creation_of_adam_id, pg_read_binary_file('/docker-entrypoint-initdb.d/seed-data/creation-of-adam.jpg'), 0, '0x0', 1);
     
-    SELECT image_id INTO mona_lisa_image_id FROM image WHERE artwork_id = mona_lisa_id;
+    SELECT image_id INTO mona_lisa_image_id FROM image WHERE artwork_id = mona_lisa_id AND display_order = 1;
+    SELECT image_id INTO mona_lisa_gioconda_image_id FROM image WHERE artwork_id = mona_lisa_id AND display_order = 2;
+    SELECT image_id INTO mona_lisa_simpsons_image_id FROM image WHERE artwork_id = mona_lisa_id AND display_order = 3;
     SELECT image_id INTO last_supper_image_id FROM image WHERE artwork_id = last_supper_id;
     SELECT image_id INTO vitruvian_man_image_id FROM image WHERE artwork_id = vitruvian_man_id;
     SELECT image_id INTO creation_of_adam_image_id FROM image WHERE artwork_id = creation_of_adam_id;
@@ -86,6 +94,7 @@ BEGIN
     INSERT INTO tag_group (category_id, name, description) VALUES
     (form_category_id, 'Landscape', 'Landscape and environmental compositions'),
     (form_category_id, 'Portrait', 'Portrait and figure compositions'),
+    (form_category_id, 'Style', 'Artistic style and visual approach'),
     (content_category_id, 'Gender', 'Gender representation in artworks'),
     (content_category_id, 'Hair', 'Hair characteristics and styles'),
     (meta_category_id, 'Medium', 'Physical medium used in the artwork'),
@@ -93,6 +102,7 @@ BEGIN
     
     SELECT group_id INTO landscape_group_id FROM tag_group WHERE name = 'Landscape';
     SELECT group_id INTO portrait_group_id FROM tag_group WHERE name = 'Portrait';
+    SELECT group_id INTO style_group_id FROM tag_group WHERE name = 'Style';
     SELECT group_id INTO gender_group_id FROM tag_group WHERE name = 'Gender';
     SELECT group_id INTO hair_group_id FROM tag_group WHERE name = 'Hair';
     SELECT group_id INTO medium_group_id FROM tag_group WHERE name = 'Medium';
@@ -104,6 +114,7 @@ BEGIN
     (portrait_group_id, 'Bust Portrait', 'Artwork depicts a person from the shoulders up'),
     (portrait_group_id, 'Full Length Portrait', 'Artwork depicts a person from head to toe'),
     (portrait_group_id, 'Profile Portrait', 'Artwork depicts a person from the side'),
+    (style_group_id, 'Cartoon', 'Artwork created in cartoon or animated style'),
     (gender_group_id, 'Male', 'Male figures present in the artwork'),
     (gender_group_id, 'Female', 'Female figures present in the artwork'),
     (gender_group_id, 'Nonbinary', 'Nonbinary or gender-neutral figures present in the artwork'),
@@ -123,6 +134,7 @@ BEGIN
     SELECT tag_id INTO bust_portrait_tag_id FROM tag WHERE name = 'Bust Portrait';
     SELECT tag_id INTO full_length_portrait_tag_id FROM tag WHERE name = 'Full Length Portrait';
     SELECT tag_id INTO profile_portrait_tag_id FROM tag WHERE name = 'Profile Portrait';
+    SELECT tag_id INTO cartoon_tag_id FROM tag WHERE name = 'Cartoon';
     SELECT tag_id INTO male_tag_id FROM tag WHERE name = 'Male';
     SELECT tag_id INTO female_tag_id FROM tag WHERE name = 'Female';
     SELECT tag_id INTO nonbinary_tag_id FROM tag WHERE name = 'Nonbinary';
@@ -149,13 +161,27 @@ BEGIN
 
     -- 7. Apply tags to artworks
     INSERT INTO image_tags (image_id, tag_id) VALUES
-    -- Mona Lisa: Bust Portrait, Female, Long hair, Brown hair, Oil on Panel, High Renaissance
+    -- Mona Lisa (Original): Bust Portrait, Female, Long hair, Brown hair, Oil on Panel, High Renaissance
     (mona_lisa_image_id, bust_portrait_tag_id),
     (mona_lisa_image_id, female_tag_id),
     (mona_lisa_image_id, long_hair_tag_id),
     (mona_lisa_image_id, brown_hair_tag_id),
     (mona_lisa_image_id, oil_panel_tag_id),
     (mona_lisa_image_id, high_renaissance_tag_id),
+    
+    -- Mona Lisa (Gioconda): Bust Portrait, Female, Long hair, Brown hair, Oil on Panel, High Renaissance
+    (mona_lisa_gioconda_image_id, bust_portrait_tag_id),
+    (mona_lisa_gioconda_image_id, female_tag_id),
+    (mona_lisa_gioconda_image_id, long_hair_tag_id),
+    (mona_lisa_gioconda_image_id, brown_hair_tag_id),
+    (mona_lisa_gioconda_image_id, oil_panel_tag_id),
+    (mona_lisa_gioconda_image_id, high_renaissance_tag_id),
+    
+    -- Mona Lisa (Simpsons): Bust Portrait, Female, Long hair, Cartoon
+    (mona_lisa_simpsons_image_id, bust_portrait_tag_id),
+    (mona_lisa_simpsons_image_id, female_tag_id),
+    (mona_lisa_simpsons_image_id, long_hair_tag_id),
+    (mona_lisa_simpsons_image_id, cartoon_tag_id),
     
     -- The Last Supper: Full Length Portrait, Male (multiple figures), Fresco, High Renaissance
     (last_supper_image_id, full_length_portrait_tag_id),

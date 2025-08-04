@@ -44,8 +44,8 @@
           <div class="space-y-4 max-w-4xl mx-auto w-full">
             <div class="bg-gray-100 rounded-lg overflow-hidden">
               <nuxt-img
-                v-if="artwork.has_image"
-                :src="`/api/image/${artwork.artwork_id}`"
+                v-if="currentImage && currentImage.has_image"
+                :src="`/api/image-by-id/${currentImage.image_id}`"
                 :alt="artwork.title"
                 provider="backend"
                 class="w-full h-full object-contain"
@@ -55,6 +55,41 @@
                 <svg class="h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
+              </div>
+            </div>
+            
+            <!-- Alternative versions -->
+            <div v-if="artwork.images && artwork.images.length > 1" class="space-y-3">
+              <h3 class="text-lg font-semibold text-black">Alternative Versions</h3>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                <div 
+                  v-for="image in artwork.images" 
+                  :key="image.image_id"
+                  class="relative cursor-pointer group"
+                  @click="selectImage(image)"
+                >
+                  <div class="bg-gray-100 rounded-lg overflow-hidden aspect-square" :class="{
+                    'ring-2 ring-blue-500': currentImage && currentImage.image_id === image.image_id
+                  }">
+                    <nuxt-img
+                      v-if="image.has_image"
+                      :src="`/api/image-by-id/${image.image_id}`"
+                      :alt="`${artwork.title} - Version ${image.display_order}`"
+                      provider="backend"
+                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      loading="lazy"
+                    />
+                    <div v-else class="w-full h-full flex items-center justify-center">
+                      <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all duration-200"></div>
+                  <div class="absolute bottom-1 right-1 bg-black bg-opacity-70 text-white text-xs px-1.5 py-0.5 rounded">
+                    {{ image.display_order }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -124,6 +159,7 @@ const artworkId = computed(() => route.query.id)
 const artwork = ref(null)
 const pending = ref(false)
 const error = ref(null)
+const currentImage = ref(null)
 
 const fetchArtwork = async (id) => {
   if (!id) {
@@ -136,12 +172,21 @@ const fetchArtwork = async (id) => {
     error.value = null
     const response = await $fetch(`/api/artwork/${id}`)
     artwork.value = response.artwork
+    // Set the first image as current by default
+    if (artwork.value.images && artwork.value.images.length > 0) {
+      currentImage.value = artwork.value.images[0]
+    }
   } catch (err) {
     error.value = err.data || err
     artwork.value = null
+    currentImage.value = null
   } finally {
     pending.value = false
   }
+}
+
+const selectImage = (image) => {
+  currentImage.value = image
 }
 
 const groupedTags = computed(() => {

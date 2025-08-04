@@ -26,5 +26,28 @@ module.exports = (pool) => {
     }
   });
 
+  router.get('/image-by-id/:imageId', async (req, res) => {
+    try {
+      const { imageId } = req.params;
+      
+      const { rows } = await pool.query(
+        'SELECT image FROM image WHERE image_id = $1',
+        [imageId]
+      );
+      
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'Image not found' });
+      }
+      
+      const imageBuffer = rows[0].image;
+      res.set('Content-Type', 'image/jpeg');
+      res.set('Cache-Control', 'public, max-age=86400');
+      res.send(imageBuffer);
+    } catch (err) {
+      console.error('Error serving image by ID:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   return router;
 };

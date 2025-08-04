@@ -13,11 +13,9 @@ module.exports = (pool) => {
           a.artwork_name as title,
           ar.name as artist,
           a.year,
-          a.description,
-          CASE WHEN i.image IS NOT NULL THEN true ELSE false END as has_image
+          a.description
         FROM artwork a
         LEFT JOIN artist ar ON a.artist_id = ar.artist_id
-        LEFT JOIN image i ON a.artwork_id = i.artwork_id AND i.display_order = 1
         WHERE a.artwork_id = $1
       `, [id]);
 
@@ -29,6 +27,20 @@ module.exports = (pool) => {
       }
 
       const artwork = result.rows[0];
+      
+      // Get all images for this artwork
+      const imagesResult = await pool.query(`
+        SELECT 
+          i.image_id,
+          i.display_order,
+          CASE WHEN i.image IS NOT NULL THEN true ELSE false END as has_image
+        FROM image i
+        WHERE i.artwork_id = $1
+        ORDER BY i.display_order
+      `, [id]);
+
+      artwork.images = imagesResult.rows;
+      artwork.has_image = imagesResult.rows.length > 0 && imagesResult.rows.some(img => img.has_image);
       
       const tagsResult = await pool.query(`
         SELECT DISTINCT
