@@ -31,12 +31,14 @@ module.exports = (pool) => {
           ar.name as artist,
           a.year,
           a.description,
+          i.image_id,
+          i.display_order,
           CASE WHEN i.image_id IS NOT NULL THEN true ELSE false END as has_image
         FROM artwork a
         LEFT JOIN artist ar ON a.artist_id = ar.artist_id
-        LEFT JOIN image i ON a.artwork_id = i.artwork_id AND i.display_order = 1
+        LEFT JOIN image i ON a.artwork_id = i.artwork_id
         WHERE ${whereClause}
-        ORDER BY a.artwork_id
+        ORDER BY a.artwork_id, i.display_order
       `, parameters);
       
       res.json({

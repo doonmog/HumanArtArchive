@@ -52,14 +52,14 @@
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
       <NuxtLink
         v-for="artwork in artworks"
-        :key="artwork.artwork_id"
+        :key="`${artwork.artwork_id}-${artwork.image_id || 'no-image'}`"
         :to="`/artwork?id=${artwork.artwork_id}`"
         class="artwork-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden relative group cursor-pointer hover:scale-105"
       >
         <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
           <nuxt-img
-            v-if="artwork.has_image"
-            :src="`/api/image/${artwork.artwork_id}`"
+            v-if="artwork.has_image && artwork.image_id"
+            :src="`/api/image-by-id/${artwork.image_id}`"
             :alt="artwork.title"
             provider="backend"
             class="w-full h-full object-cover"
