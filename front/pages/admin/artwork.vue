@@ -141,7 +141,7 @@
                       class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-800 border"
                     >
                       <span class="text-xs text-gray-500 mr-1">{{ tag.group_name }}:</span>
-                      {{ tag.name }}
+                      {{ tag.tag_name }}
                       <button 
                         @click="removeTag(tag.tag_id)"
                         class="ml-2 text-red-500 hover:text-red-700 transition-colors"

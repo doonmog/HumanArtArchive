@@ -55,6 +55,7 @@ module.exports = (pool) => {
       if (targetImageId) {
         tagsResult = await pool.query(`
           SELECT DISTINCT
+            t.tag_id,
             t.name as tag_name,
             tg.name as group_name,
             c.name as category

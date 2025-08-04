@@ -11,6 +11,7 @@ const tagTestRoutes = require('./test/tag-test.js');
 const getArtRoutes = require('./user/get-art.js');
 const getImageRoutes = require('./user/get-image.js');
 const getArtworkDetailsRoutes = require('./user/get-artwork-details.js');
+const getTagsRoutes = require('./user/get-tags.js');
 const authRoutes = require('./auth/auth.js');
 const uploadArtworkRoutes = require('./admin/upload-artwork.js');
 const updateTagsRoutes = require('./admin/update-tags.js');
@@ -60,10 +61,11 @@ app.get('/', (req, res) => {
 // Therefore, all API routes must be mounted at root ('/') not '/api'
 app.use('/db-test', dbTestRoutes(pool));
 app.use('/', getTestRoutes(pool));
-app.use('/', tagTestRoutes(pool));
 app.use('/', getArtRoutes(pool));
 app.use('/', getImageRoutes(pool));
 app.use('/', getArtworkDetailsRoutes(pool));
+app.use('/', getTagsRoutes(pool));
+app.use('/', tagTestRoutes(pool));
 app.use('/auth', authRoutes(pool));
 app.use('/admin', uploadArtworkRoutes(pool));
 app.use('/admin', updateTagsRoutes(pool));

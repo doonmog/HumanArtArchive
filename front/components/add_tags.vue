@@ -270,11 +270,7 @@ const fetchTags = async () => {
   error.value = '';
   
   try {
-    const response = await $fetch('/api/admin/tags', {
-      headers: {
-        'Authorization': `Bearer ${token.value}`
-      }
-    });
+    const response = await $fetch('/api/tags');
     
     categories.value = response.categories || [];
   } catch (err) {
@@ -466,6 +462,13 @@ const applyTags = async () => {
 // Watch for changes in selectedTagIds
 watch(selectedTagIds, () => {
   updateSelectedTags();
+});
+
+// Watch for changes in applyToAllImages to auto-select first image
+watch(applyToAllImages, (newValue) => {
+  if (!newValue && props.images.length > 0 && !selectedImageId.value) {
+    selectedImageId.value = props.images[0].id || props.images[0].image_id;
+  }
 });
 
 // Initialize
