@@ -19,7 +19,8 @@
                   <span
                     v-for="tag in group.tags"
                     :key="tag.tag_name"
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200 transition-colors"
+                    @click="searchTag(tag.tag_name)"
                   >
                     {{ tag.tag_name }}
                   </span>
@@ -35,6 +36,8 @@
 
 <script setup>
 import { computed } from 'vue'
+
+const emit = defineEmits(['search-tag'])
 
 const props = defineProps({
   tags: {
@@ -81,5 +84,10 @@ const categories = computed(() => {
 // Get groups by category
 const getGroupsByCategory = (category) => {
   return groupedTags.value.filter(group => group.category === category)
+}
+
+// Function to emit search event when a tag is clicked
+const searchTag = (tagName) => {
+  emit('search-tag', tagName)
 }
 </script>

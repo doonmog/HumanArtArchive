@@ -17,7 +17,7 @@ CREATE TABLE "artist" (
 CREATE TABLE "artwork" (
   "artwork_id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "artist_id" UUID,
-  "artwork_name" TEXT UNIQUE,
+  "artwork_name" TEXT,
   "year" integer,
   "description" TEXT
 );

@@ -99,7 +99,7 @@
             </h1>
             <div class="space-y-1">
               <p v-if="artwork.artist" class="text-xl text-black">
-                by {{ artwork.artist }}
+                by <span class="cursor-pointer hover:text-blue-600 hover:underline" @click="searchArtist(artwork.artist)">{{ artwork.artist }}</span>
               </p>
               <p v-if="artwork.year" class="text-lg text-black">
                 {{ artwork.year }}
@@ -116,7 +116,7 @@
           </div>
 
           <!-- Tags -->
-          <ArtworkTags v-if="artwork.tags && artwork.tags.length > 0" :tags="artwork.tags" />
+          <ArtworkTags v-if="artwork.tags && artwork.tags.length > 0" :tags="artwork.tags" @search-tag="searchTag" />
 
           <!-- Slot for additional content (admin features) -->
           <slot name="additional-content"></slot>
@@ -128,6 +128,7 @@
 
 <script setup>
 import ArtworkTags from './artwork_tags.vue'
+import { navigateTo } from 'nuxt/app'
 
 const props = defineProps({
   artworkId: {
@@ -140,7 +141,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['image-selected'])
+const emit = defineEmits(['image-selected', 'search'])
 
 const artwork = ref(null)
 const pending = ref(false)
@@ -187,6 +188,18 @@ const selectImage = async (image) => {
   // Fetch tags for the selected image
   await fetchArtwork(props.artworkId, image.image_id)
   emit('image-selected', image)
+}
+
+// Search for artworks with a specific tag
+const searchTag = (tagName) => {
+  // If tag contains spaces, enclose it in quotes
+  const formattedTag = tagName.includes(' ') ? `"${tagName}"` : tagName
+  navigateTo(`/search?q=${encodeURIComponent(formattedTag)}`)
+}
+
+// Search for artworks by a specific artist
+const searchArtist = (artistName) => {
+  navigateTo(`/search?q=${encodeURIComponent(`artist:"${artistName}"`)}`)
 }
 
 const groupedTags = computed(() => {
