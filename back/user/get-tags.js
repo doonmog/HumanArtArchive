@@ -81,5 +81,39 @@ module.exports = (pool) => {
     }
   });
 
+  // Get tag information by name
+  router.get('/tag-by-name/:name', async (req, res) => {
+    try {
+      const { name } = req.params;
+      
+      if (!name) {
+        return res.status(400).json({ message: 'Tag name is required' });
+      }
+      
+      const result = await pool.query(`
+        SELECT 
+          t.tag_id,
+          t.name,
+          t.description,
+          tg.name as group_name,
+          c.name as category_name
+        FROM tag t
+        JOIN tag_group tg ON t.group_id = tg.group_id
+        JOIN category c ON tg.category_id = c.category_id
+        WHERE LOWER(t.name) = LOWER($1)
+      `, [name]);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'Tag not found' });
+      }
+      
+      res.json({ tag: result.rows[0] });
+      
+    } catch (error) {
+      console.error('Error fetching tag by name:', error);
+      res.status(500).json({ message: 'Failed to fetch tag information' });
+    }
+  });
+
   return router;
 };

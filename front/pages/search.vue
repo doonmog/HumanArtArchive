@@ -3,10 +3,16 @@
     <Header />
     <div class="container mx-auto px-4 py-8">
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      <h1 v-if="tagInfo" class="text-4xl font-bold text-black mb-2">
+        {{ tagInfo.name }}
+      </h1>
+      <h1 v-else class="text-3xl font-bold text-black mb-2">
         Search Results
       </h1>
-      <p v-if="query" class="text-gray-600 dark:text-gray-400">
+      <p v-if="tagInfo && tagInfo.description" class="text-lg text-black mb-4">
+        {{ tagInfo.description }}
+      </p>
+      <p v-if="query" class="text-gray-600">
         Showing results for: <span class="font-medium">"{{ query }}"</span>
       </p>
     </div>
@@ -104,16 +110,30 @@ const query = computed(() => route.query.q || '')
 const searchResults = ref(null)
 const pending = ref(false)
 const error = ref(null)
+const tagInfo = ref(null)
 
 const fetchResults = async (searchQuery) => {
   
   try {
     pending.value = true
     error.value = null
+    tagInfo.value = null
+    
     const response = await $fetch('/api/art', {
       query: { q: searchQuery }
     })
     searchResults.value = response
+    
+    // Check if this is a single tag search
+    if (searchQuery && !searchQuery.includes(' ') && !searchQuery.includes(':') && !searchQuery.includes('-')) {
+      try {
+        const tagResponse = await $fetch(`/api/tag-by-name/${encodeURIComponent(searchQuery)}`)
+        tagInfo.value = tagResponse.tag
+      } catch (tagErr) {
+        console.error('Error fetching tag info:', tagErr)
+        // Don't set error here, we still have search results
+      }
+    }
   } catch (err) {
     error.value = err
     searchResults.value = null
