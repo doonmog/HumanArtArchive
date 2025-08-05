@@ -28,18 +28,19 @@
               class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
             <span class="ml-2 text-sm font-medium text-gray-700">
-              {{ selectedArtworks.size === 0 ? 'Select All Visible' : 
-                 selectedArtworks.size === artworks.length ? 'Deselect All' : 
-                 `Selected ${selectedArtworks.size} of ${artworks.length}` }}
+              {{ selectedCount === 0 ? 'Select All Visible' : 
+                 isAllSelected ? 'Deselect All' : 
+                 `Selected ${selectedCount} of ${totalSelectableCount}` }}
             </span>
           </label>
         </div>
         <div class="flex items-center space-x-2">
-          <span v-if="selectedArtworks.size > 0" class="text-sm text-gray-600">
-            {{ selectedArtworks.size }} artwork{{ selectedArtworks.size !== 1 ? 's' : '' }} selected
+          <span v-if="selectedCount > 0" class="text-sm text-gray-600">
+            {{ selectedImages.size }} image{{ selectedImages.size !== 1 ? 's' : '' }} selected
+            from {{ selectedArtworks.size }} artwork{{ selectedArtworks.size !== 1 ? 's' : '' }}
           </span>
           <button
-            v-if="selectedArtworks.size > 0"
+            v-if="selectedCount > 0"
             @click="openEditSidebar"
             class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
@@ -92,16 +93,15 @@
         v-for="artwork in artworks"
         :key="`${artwork.artwork_id}-${artwork.image_id || 'no-image'}`"
         class="artwork-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden relative group"
-        :class="{ 'ring-2 ring-blue-500': isAdmin && selectedArtworks.has(artwork.artwork_id) }"
+        :class="{ 'ring-2 ring-blue-500': isAdmin && selectedImages.has(artwork.image_id) }"
       >
         <!-- Selection checkbox for admin -->
         <div v-if="isAdmin" class="absolute top-2 left-2 z-10">
           <input
             type="checkbox"
-            :checked="selectedArtworks.has(artwork.artwork_id)"
-            @change="toggleArtworkSelection(artwork.artwork_id)"
-            @click.stop
-            class="h-4 w-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500"
+            :checked="artwork.image_id ? selectedImages.has(artwork.image_id) : selectedArtworks.has(artwork.artwork_id)"
+            @change="toggleSelection(artwork)"
+            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
           />
         </div>
 
@@ -165,12 +165,14 @@
         
         <div class="mb-4">
           <p class="text-sm text-gray-600">
-            Adding tags to {{ selectedArtworks.size }} artwork{{ selectedArtworks.size !== 1 ? 's' : '' }}
+            Adding tags to {{ selectedImages.size }} image{{ selectedImages.size !== 1 ? 's' : '' }}
+            from {{ selectedArtworks.size }} artwork{{ selectedArtworks.size !== 1 ? 's' : '' }}
           </p>
         </div>
 
         <BulkAddTags
           :artwork-ids="Array.from(selectedArtworks)"
+          :image-ids="Array.from(selectedImages)"
           @tags-applied="onBulkTagsApplied"
         />
       </div>
@@ -201,6 +203,7 @@ const props = defineProps({
 
 // Multi-select state for admin
 const selectedArtworks = ref(new Set())
+const selectedImages = ref(new Set())
 const showEditSidebar = ref(false)
 
 const searchResults = ref(null)
@@ -251,30 +254,65 @@ const getArtworkLink = (artwork) => {
 }
 
 // Multi-select computed properties
+const totalSelectableCount = computed(() => {
+  return artworks.value.length
+})
+
+const selectedCount = computed(() => {
+  return selectedImages.value.size
+})
+
 const isAllSelected = computed(() => {
-  return artworks.value.length > 0 && selectedArtworks.value.size === artworks.value.length
+  return artworks.value.length > 0 && 
+    artworks.value.every(artwork => {
+      return artwork.image_id ? selectedImages.value.has(artwork.image_id) : false
+    })
 })
 
 const isSomeSelected = computed(() => {
-  return selectedArtworks.value.size > 0 && selectedArtworks.value.size < artworks.value.length
+  return selectedCount.value > 0 && !isAllSelected.value
 })
 
 // Multi-select methods
 const toggleSelectAll = () => {
   if (isAllSelected.value) {
+    // Clear all selections
     selectedArtworks.value.clear()
+    selectedImages.value.clear()
   } else {
+    // Select all images and their artworks
     artworks.value.forEach(artwork => {
-      selectedArtworks.value.add(artwork.artwork_id)
+      if (artwork.artwork_id && !selectedArtworks.value.has(artwork.artwork_id)) {
+        selectedArtworks.value.add(artwork.artwork_id)
+      }
+      if (artwork.image_id && !selectedImages.value.has(artwork.image_id)) {
+        selectedImages.value.add(artwork.image_id)
+      }
     })
   }
 }
 
-const toggleArtworkSelection = (artworkId) => {
-  if (selectedArtworks.value.has(artworkId)) {
-    selectedArtworks.value.delete(artworkId)
-  } else {
-    selectedArtworks.value.add(artworkId)
+const toggleSelection = (artwork) => {
+  // Toggle image selection
+  if (artwork.image_id) {
+    if (selectedImages.value.has(artwork.image_id)) {
+      selectedImages.value.delete(artwork.image_id)
+      
+      // Check if this was the last image from this artwork
+      const hasMoreImagesFromArtwork = artworks.value.some(item => 
+        item.artwork_id === artwork.artwork_id && 
+        item.image_id !== artwork.image_id && 
+        selectedImages.value.has(item.image_id)
+      )
+      
+      // If no more images from this artwork are selected, remove artwork from selection
+      if (!hasMoreImagesFromArtwork) {
+        selectedArtworks.value.delete(artwork.artwork_id)
+      }
+    } else {
+      selectedImages.value.add(artwork.image_id)
+      selectedArtworks.value.add(artwork.artwork_id)
+    }
   }
 }
 
@@ -289,6 +327,7 @@ const closeEditSidebar = () => {
 const onBulkTagsApplied = () => {
   // Clear selections and close sidebar after successful bulk tag application
   selectedArtworks.value.clear()
+  selectedImages.value.clear()
   closeEditSidebar()
   // Optionally refresh results to show updated tags
   fetchResults(props.query)
@@ -298,6 +337,7 @@ const onBulkTagsApplied = () => {
 watch(() => props.query, (newQuery) => {
   // Clear selections when query changes
   selectedArtworks.value.clear()
+  selectedImages.value.clear()
   fetchResults(newQuery)
 }, { immediate: true })
 </script>

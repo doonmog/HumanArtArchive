@@ -1,7 +1,7 @@
 <template>
   <div class="bulk-tag-manager">
     <div class="mb-4">
-      <h3 class="text-lg font-medium text-gray-700 mb-2">Add Tags to Multiple Artworks</h3>
+      <h3 class="text-lg font-medium text-gray-700 mb-2">Add Tags to Selected Items</h3>
       
       <!-- Loading state -->
       <div v-if="loading" class="flex items-center justify-center py-4">
@@ -164,7 +164,7 @@
             :disabled="selectedTags.length === 0 || submitting"
             class="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            {{ submitting ? 'Applying Tags...' : `Apply Tags to ${artworkIds.length} Artwork${artworkIds.length !== 1 ? 's' : ''}` }}
+            {{ submitting ? 'Applying Tags...' : `Apply Tags to ${imageIds.length} Image${imageIds.length !== 1 ? 's' : ''}` }}
           </button>
         </div>
       </div>
@@ -177,6 +177,11 @@ const props = defineProps({
   artworkIds: {
     type: Array,
     required: true
+  },
+  // Add support for individual image IDs
+  imageIds: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -356,7 +361,7 @@ const updateSelectedTags = () => {
 }
 
 const applyTags = async () => {
-  if (selectedTags.value.length === 0 || props.artworkIds.length === 0) return
+  if (selectedTags.value.length === 0 || (props.artworkIds.length === 0 && props.imageIds.length === 0)) return
   
   submitting.value = true
   error.value = ''
@@ -380,6 +385,7 @@ const applyTags = async () => {
       method: 'POST',
       body: {
         artworkIds: props.artworkIds,
+        imageIds: props.imageIds,  // Add imageIds to the request
         tags: tagsToApply
       },
       headers: {
@@ -387,11 +393,14 @@ const applyTags = async () => {
       }
     })
     
-    successMessage.value = response.message || `Tags applied successfully to ${props.artworkIds.length} artwork${props.artworkIds.length !== 1 ? 's' : ''}`
+    // Update success message to reflect both artworks and images
+    const totalItems = props.artworkIds.length + props.imageIds.length
+    successMessage.value = response.message || `Tags applied successfully to ${totalItems} item${totalItems !== 1 ? 's' : ''}`
     
     emit('tags-applied', {
       tags: selectedTags.value,
-      artworkIds: props.artworkIds
+      artworkIds: props.artworkIds,
+      imageIds: props.imageIds
     })
     
     // Clear selections

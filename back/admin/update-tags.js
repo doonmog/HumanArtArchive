@@ -319,48 +319,79 @@ module.exports = (pool) => {
     }
   });
 
-  // Bulk update tags for multiple artworks
+  // Bulk update tags for multiple artworks and/or individual images
   router.post('/bulk-update-tags', verifyAdminToken, async (req, res) => {
     const client = await pool.connect();
     
     try {
       await client.query('BEGIN');
       
-      const { artworkIds, tags } = req.body;
+      const { artworkIds = [], imageIds = [], tags } = req.body;
       
-      if (!artworkIds || !Array.isArray(artworkIds) || artworkIds.length === 0) {
-        return res.status(400).json({ message: 'At least one artwork ID is required' });
+      if ((!artworkIds || artworkIds.length === 0) && (!imageIds || imageIds.length === 0)) {
+        return res.status(400).json({ message: 'Either artwork IDs or image IDs are required' });
       }
       
       if (!tags || !Array.isArray(tags) || tags.length === 0) {
         return res.status(400).json({ message: 'At least one tag is required' });
       }
       
-      // Verify all artworks exist
-      const artworkPlaceholders = artworkIds.map((_, index) => `$${index + 1}`).join(',');
-      const artworkResult = await client.query(
-        `SELECT artwork_id FROM artwork WHERE artwork_id IN (${artworkPlaceholders})`,
-        artworkIds
-      );
+      let imagesToTag = [];
       
-      if (artworkResult.rows.length !== artworkIds.length) {
-        const foundIds = artworkResult.rows.map(row => row.artwork_id);
-        const missingIds = artworkIds.filter(id => !foundIds.includes(id));
-        return res.status(404).json({ 
-          message: `Some artworks not found: ${missingIds.join(', ')}` 
-        });
+      // Process artwork IDs if provided
+      if (artworkIds && artworkIds.length > 0) {
+        const artworkPlaceholders = artworkIds.map((_, index) => `$${index + 1}`).join(',');
+        const artworkResult = await client.query(
+          `SELECT artwork_id FROM artwork WHERE artwork_id IN (${artworkPlaceholders})`,
+          artworkIds
+        );
+        
+        if (artworkResult.rows.length !== artworkIds.length) {
+          const foundIds = artworkResult.rows.map(row => row.artwork_id);
+          const missingIds = artworkIds.filter(id => !foundIds.includes(id));
+          return res.status(404).json({ 
+            message: `Some artworks not found: ${missingIds.join(', ')}` 
+          });
+        }
+        
+        // If imageIds are provided, we'll only tag those specific images
+        // If no imageIds are provided, get all images for the specified artworks
+        if (!imageIds || imageIds.length === 0) {
+          const artworkImagesResult = await client.query(
+            `SELECT image_id FROM image WHERE artwork_id IN (${artworkPlaceholders})`,
+            artworkIds
+          );
+          
+          // Add artwork images to the list
+          imagesToTag = [...imagesToTag, ...artworkImagesResult.rows.map(row => row.image_id)];
+        }
       }
       
-      // Get all images for the specified artworks
-      const imagesResult = await client.query(
-        `SELECT image_id, artwork_id FROM image WHERE artwork_id IN (${artworkPlaceholders})`,
-        artworkIds
-      );
+      // Process individual image IDs if provided
+      if (imageIds && imageIds.length > 0) {
+        const imagePlaceholders = imageIds.map((_, index) => `$${index + 1}`).join(',');
+        const imageResult = await client.query(
+          `SELECT image_id FROM image WHERE image_id IN (${imagePlaceholders})`,
+          imageIds
+        );
+        
+        if (imageResult.rows.length !== imageIds.length) {
+          const foundIds = imageResult.rows.map(row => row.image_id);
+          const missingIds = imageIds.filter(id => !foundIds.includes(id));
+          return res.status(404).json({ 
+            message: `Some images not found: ${missingIds.join(', ')}` 
+          });
+        }
+        
+        // Add individual images to the list
+        imagesToTag = [...imagesToTag, ...imageResult.rows.map(row => row.image_id)];
+      }
       
-      const imagesToTag = imagesResult.rows.map(row => row.image_id);
+      // Remove duplicates from imagesToTag
+      imagesToTag = [...new Set(imagesToTag)];
       
       if (imagesToTag.length === 0) {
-        return res.status(404).json({ message: 'No images found for the specified artworks' });
+        return res.status(404).json({ message: 'No images found to tag' });
       }
       
       // Process each tag
@@ -431,10 +462,17 @@ module.exports = (pool) => {
       
       await client.query('COMMIT');
       
+      // Calculate artwork count from images
+      const artworkCountResult = await client.query(
+        `SELECT COUNT(DISTINCT artwork_id) as count FROM image WHERE image_id = ANY($1::uuid[])`,
+        [imagesToTag]
+      );
+      const artworkCount = parseInt(artworkCountResult.rows[0].count);
+      
       res.json({
-        message: `Successfully applied ${addedTags.length} tag(s) to ${artworkIds.length} artwork(s) (${totalTagsApplied} total tag applications)`,
+        message: `Successfully applied ${addedTags.length} tag(s) to ${imagesToTag.length} image(s) across ${artworkCount} artwork(s) (${totalTagsApplied} total tag applications)`,
         addedTags,
-        artworkCount: artworkIds.length,
+        artworkCount,
         imageCount: imagesToTag.length,
         totalTagsApplied
       });
