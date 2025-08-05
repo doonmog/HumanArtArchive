@@ -146,13 +146,20 @@ const handleSearch = async () => {
     category.groups.forEach(group => {
       group.tags.forEach(tag => {
         if (selectedTags.value.includes(tag.tagId)) {
-          selectedTagNames.push(tag.name)
+          // Add tag name to the list, properly formatted for search
+          const tagName = tag.name
+          // If tag contains spaces, wrap it in quotes
+          if (tagName.includes(' ')) {
+            selectedTagNames.push(`"${tagName}"`)
+          } else {
+            selectedTagNames.push(tagName)
+          }
         }
       })
     })
   })
   
-  // Build search query string (similar to search.vue)
+  // Build search query string with properly quoted multi-word tags
   const queryString = selectedTagNames.join(' ')
   navigateTo(`/search?q=${encodeURIComponent(queryString)}`)
 }
