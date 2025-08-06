@@ -36,6 +36,8 @@ app.use(cors({
 }));
 app.use(express.json());
 
+const RATE_LIMIT_BYPASS_KEY = process.env.RATE_LIMIT_BYPASS_KEY;
+
 // Rate limiting middleware
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -45,6 +47,11 @@ const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting if valid bypass key is provided
+  skip: (req, res) => {
+    const bypassKey = req.headers['x-rate-limit-bypass'];
+    return bypassKey === RATE_LIMIT_BYPASS_KEY;
+  }
 });
 
 // Apply rate limiting to all requests
