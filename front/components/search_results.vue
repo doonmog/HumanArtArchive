@@ -256,6 +256,10 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  page: {
+    type: Number,
+    default: 1
+  },
   isAdmin: {
     type: Boolean,
     default: false
@@ -405,13 +409,32 @@ const onBulkTagsApplied = () => {
   fetchResults(props.query, currentPage.value)
 }
 
+const router = useRouter()
+const route = useRoute()
+
 // Pagination navigation functions
 const goToPage = (page) => {
   if (page >= 1 && page <= (pagination.value?.totalPages || 1)) {
     // Clear selections when changing pages
     selectedArtworks.value.clear()
     selectedImages.value.clear()
-    fetchResults(props.query, page)
+    
+    // Update URL with new page number
+    const query = { ...route.query, page: page > 1 ? page.toString() : undefined }
+    
+    // Remove page parameter if it's page 1 for cleaner URLs
+    if (page === 1 && query.page) {
+      delete query.page
+    }
+    
+    // Update the URL
+    router.push({ query })
+    
+    // Only fetch if the page prop hasn't been updated yet
+    // (the watcher will handle it otherwise)
+    if (props.page !== page) {
+      fetchResults(props.query, page)
+    }
   }
 }
 
@@ -452,6 +475,14 @@ watch(() => props.query, (newQuery) => {
   selectedImages.value.clear()
   currentPage.value = 1
   fetchResults(newQuery, 1)
+}, { immediate: true })
+
+// Watch for page prop changes from URL
+watch(() => props.page, (newPage) => {
+  if (newPage !== currentPage.value) {
+    currentPage.value = newPage
+    fetchResults(props.query, newPage)
+  }
 }, { immediate: true })
 </script>
 
