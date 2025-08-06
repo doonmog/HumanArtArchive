@@ -140,10 +140,71 @@
       </div>
     </div>
 
-    <div v-if="artworks && artworks.length > 0" class="mt-8 text-center">
-      <p class="text-gray-600 dark:text-gray-400">
-        Found {{ artworks.length }} artwork{{ artworks.length !== 1 ? 's' : '' }}
+    <!-- Pagination Info -->
+    <div v-if="pagination" class="mt-8 text-center">
+      <p class="text-gray-600 dark:text-gray-400 mb-4">
+        Showing {{ artworks.length }} of {{ pagination.totalItems }} artwork{{ pagination.totalItems !== 1 ? 's' : '' }}
+        (Page {{ pagination.currentPage }} of {{ pagination.totalPages }})
       </p>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div v-if="pagination && pagination.totalPages > 1" class="mt-6 flex justify-center items-center space-x-2">
+      <!-- Previous Button -->
+      <button
+        @click="prevPage"
+        :disabled="!pagination.hasPrevPage"
+        class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Previous
+      </button>
+
+      <!-- Page Numbers -->
+      <div class="flex space-x-1">
+        <!-- First page -->
+        <button
+          v-if="pagination.currentPage > 3"
+          @click="goToPage(1)"
+          class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          1
+        </button>
+        <span v-if="pagination.currentPage > 4" class="px-2 py-2 text-gray-500">...</span>
+
+        <!-- Pages around current page -->
+        <button
+          v-for="page in getVisiblePages()"
+          :key="page"
+          @click="goToPage(page)"
+          :class="[
+            'px-3 py-2 text-sm font-medium rounded-md',
+            page === pagination.currentPage
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+          ]"
+        >
+          {{ page }}
+        </button>
+
+        <!-- Last page -->
+        <span v-if="pagination.currentPage < pagination.totalPages - 3" class="px-2 py-2 text-gray-500">...</span>
+        <button
+          v-if="pagination.currentPage < pagination.totalPages - 2"
+          @click="goToPage(pagination.totalPages)"
+          class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          {{ pagination.totalPages }}
+        </button>
+      </div>
+
+      <!-- Next Button -->
+      <button
+        @click="nextPage"
+        :disabled="!pagination.hasNextPage"
+        class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Next
+      </button>
     </div>
 
     <!-- Edit Sidebar -->
@@ -210,17 +271,24 @@ const searchResults = ref(null)
 const pending = ref(false)
 const error = ref(null)
 const tagInfo = ref(null)
+const currentPage = ref(1)
+const itemsPerPage = 60
 
-const fetchResults = async (searchQuery) => {
+const fetchResults = async (searchQuery, page = 1) => {
   try {
     pending.value = true
     error.value = null
     tagInfo.value = null
     
     const response = await $fetch('/api/art', {
-      query: { q: searchQuery }
+      query: { 
+        q: searchQuery,
+        page: page,
+        limit: itemsPerPage
+      }
     })
     searchResults.value = response
+    currentPage.value = page
     
     // Check if this is a single tag search
     if (searchQuery && !searchQuery.includes(' ') && !searchQuery.includes(':') && !searchQuery.includes('-')) {
@@ -239,9 +307,13 @@ const fetchResults = async (searchQuery) => {
   }
 }
 
-const refresh = () => fetchResults(props.query)
+const refresh = () => {
+  currentPage.value = 1
+  fetchResults(props.query, 1)
+}
 
 const artworks = computed(() => searchResults.value?.artworks || [])
+const pagination = computed(() => searchResults.value?.pagination || null)
 
 const getArtworkLink = (artwork) => {
   const baseUrl = props.isAdmin ? '/admin/artwork' : '/artwork'
@@ -330,7 +402,47 @@ const onBulkTagsApplied = () => {
   selectedImages.value.clear()
   closeEditSidebar()
   // Optionally refresh results to show updated tags
-  fetchResults(props.query)
+  fetchResults(props.query, currentPage.value)
+}
+
+// Pagination navigation functions
+const goToPage = (page) => {
+  if (page >= 1 && page <= (pagination.value?.totalPages || 1)) {
+    // Clear selections when changing pages
+    selectedArtworks.value.clear()
+    selectedImages.value.clear()
+    fetchResults(props.query, page)
+  }
+}
+
+const nextPage = () => {
+  if (pagination.value?.hasNextPage) {
+    goToPage(currentPage.value + 1)
+  }
+}
+
+const prevPage = () => {
+  if (pagination.value?.hasPrevPage) {
+    goToPage(currentPage.value - 1)
+  }
+}
+
+const getVisiblePages = () => {
+  if (!pagination.value) return []
+  
+  const current = pagination.value.currentPage
+  const total = pagination.value.totalPages
+  const pages = []
+  
+  // Show current page and 1-2 pages on each side
+  const start = Math.max(1, current - 2)
+  const end = Math.min(total, current + 2)
+  
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+  
+  return pages
 }
 
 // Watch for query changes
@@ -338,7 +450,8 @@ watch(() => props.query, (newQuery) => {
   // Clear selections when query changes
   selectedArtworks.value.clear()
   selectedImages.value.clear()
-  fetchResults(newQuery)
+  currentPage.value = 1
+  fetchResults(newQuery, 1)
 }, { immediate: true })
 </script>
 

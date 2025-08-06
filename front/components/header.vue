@@ -11,6 +11,9 @@
         </div>
         
         <div class="flex gap-4">
+          <NuxtLink to="/search?q=version%3Aprimary" class="text-gray-600 hover:text-gray-800">
+            View all art
+          </NuxtLink>
           <NuxtLink to="/help" class="text-gray-600 hover:text-gray-800">
             Help
           </NuxtLink>
