@@ -3,6 +3,17 @@
     <Header />
     <div class="container mx-auto px-4 py-8">
       <h1 class="text-3xl font-bold mb-6">Advanced Search</h1>
+
+      <!-- Alternate Versions Checkbox -->
+      <div class="flex items-center mb-6">
+        <input 
+          id="alternate-versions"
+          type="checkbox" 
+          v-model="showAlternateVersions"
+          class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+        >
+        <label for="alternate-versions" class="ml-2 text-gray-700">Show alternate versions of artwork</label>
+      </div>
       
       <div v-if="loading" class="flex justify-center py-12">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
@@ -61,7 +72,7 @@
           <button 
             @click="handleSearch" 
             class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-            :disabled="selectedTags.length === 0"
+            :disabled="selectedTags.length === 0 && showAlternateVersions"
           >
             Search with Selected Tags
           </button>
@@ -80,6 +91,7 @@ const categories = ref([])
 const selectedTags = ref([])
 const openGroups = ref([])
 const loading = ref(true)
+const showAlternateVersions = ref(false)
 
 // Fetch all categories, tag groups, and tags
 onMounted(async () => {
@@ -138,8 +150,11 @@ const deselectAllInGroup = (group) => {
 
 // Handle search with selected tags
 const handleSearch = async () => {
-  if (selectedTags.value.length === 0) return
-  
+  if (selectedTags.value.length === 0 && showAlternateVersions.value) {
+    // If nothing is selected and we are not filtering for primary, do nothing.
+    return
+  }
+
   // Get tag names for selected tag IDs
   const selectedTagNames = []
   categories.value.forEach(category => {
@@ -158,9 +173,20 @@ const handleSearch = async () => {
       })
     })
   })
-  
+
   // Build search query string with properly quoted multi-word tags
-  const queryString = selectedTagNames.join(' ')
-  navigateTo(`/search?q=${encodeURIComponent(queryString)}`)
+  const tagQuery = selectedTagNames.join(' ')
+  let finalQuery = tagQuery
+
+  if (!showAlternateVersions.value) {
+    const versionQuery = 'version:primary'
+    if (finalQuery) {
+      finalQuery = `${versionQuery} ${finalQuery}`
+    } else {
+      finalQuery = versionQuery
+    }
+  }
+
+  navigateTo(`/search?q=${encodeURIComponent(finalQuery)}`)
 }
 </script>
