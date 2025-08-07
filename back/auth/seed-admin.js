@@ -3,10 +3,13 @@ const { Pool } = require('pg');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../db/.env') });
 
+// Determine if we're running inside a Docker container
+const isDocker = process.env.DOCKER_CONTAINER === 'true' || process.env.NODE_ENV === 'production';
+
 const pool = new Pool({
   user: process.env.POSTGRES_USER,
   password: process.env.POSTGRES_PASSWORD,
-  host: process.env.POSTGRES_HOST || 'localhost',
+  host: isDocker ? 'db' : (process.env.POSTGRES_HOST || 'localhost'),
   port: process.env.POSTGRES_PORT || 5432,
   database: process.env.POSTGRES_DB || 'db',
 });

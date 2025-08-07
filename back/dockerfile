@@ -8,6 +8,9 @@ RUN npm install
 
 COPY . .
 
+# Set environment variable to indicate we're in a Docker container
+ENV DOCKER_CONTAINER=true
+
 EXPOSE 3001
 
 CMD ["npm", "start"]
