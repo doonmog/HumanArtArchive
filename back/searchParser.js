@@ -94,24 +94,34 @@ class SearchParser {
 
   parseExpression() {
     let left = this.parseTerm();
-    
+
     while (this.position < this.tokens.length) {
       const token = this.tokens[this.position];
-      
-      if (token && (token.type === 'AND' || token.type === 'OR')) {
-        this.position++;
-        const right = this.parseTerm();
-        left = {
-          type: 'BINARY_OP',
-          operator: token.type,
-          left,
-          right
-        };
-      } else {
+
+      // If we're at the end of the query or see a closing parenthesis, stop.
+      if (!token || token.type === 'RPAREN') {
         break;
       }
+
+      let operator;
+      // Explicit AND/OR
+      if (token.type === 'AND' || token.type === 'OR') {
+        operator = token.type;
+        this.position++;
+      } else {
+        // Implicit AND
+        operator = 'AND';
+      }
+
+      const right = this.parseTerm();
+      left = {
+        type: 'BINARY_OP',
+        operator: operator,
+        left,
+        right
+      };
     }
-    
+
     return left;
   }
 
