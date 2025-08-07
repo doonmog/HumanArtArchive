@@ -25,15 +25,7 @@
 
     <!-- Artwork details -->
     <div v-else-if="artwork" class="max-w-6xl mx-auto">
-      <!-- Back button -->
-      <div class="mb-6">
-        <button @click="$router.back()" class="flex items-center text-gray-600 hover:text-gray-900 transition-colors">
-          <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back
-        </button>
-      </div>
+
 
       <div class="flex flex-col gap-8">
         <!-- Image section -->

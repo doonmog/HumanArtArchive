@@ -48,6 +48,18 @@
           </button>
         </div>
       </div>
+      <div class="mt-4">
+        <label class="flex items-center">
+          <input
+            type="checkbox"
+            v-model="selectEntireArtwork"
+            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <span class="ml-2 text-sm font-medium text-gray-700">
+            Select each image of artwork
+          </span>
+        </label>
+      </div>
     </div>
 
     <div v-if="pending" class="flex justify-center items-center py-12">
@@ -269,6 +281,7 @@ const props = defineProps({
 // Multi-select state for admin
 const selectedArtworks = ref(new Set())
 const selectedImages = ref(new Set())
+const selectEntireArtwork = ref(false)
 const showEditSidebar = ref(false)
 
 const searchResults = ref(null)
@@ -369,19 +382,40 @@ const toggleSelectAll = () => {
 }
 
 const toggleSelection = (artwork) => {
-  // Toggle image selection
-  if (artwork.image_id) {
-    if (selectedImages.value.has(artwork.image_id)) {
+  if (!artwork || !artwork.image_id) return
+
+  const isSelected = selectedImages.value.has(artwork.image_id)
+
+  if (selectEntireArtwork.value) {
+    // Select/deselect all images for the given artwork_id
+    artworks.value.forEach(item => {
+      if (item.artwork_id === artwork.artwork_id && item.image_id) {
+        if (isSelected) {
+          selectedImages.value.delete(item.image_id)
+        } else {
+          selectedImages.value.add(item.image_id)
+        }
+      }
+    })
+
+    // Update artwork selection
+    if (isSelected) {
+      selectedArtworks.value.delete(artwork.artwork_id)
+    } else {
+      selectedArtworks.value.add(artwork.artwork_id)
+    }
+
+  } else {
+    // Original behavior: toggle single image
+    if (isSelected) {
       selectedImages.value.delete(artwork.image_id)
       
-      // Check if this was the last image from this artwork
+      // Check if this was the last image from this artwork on the current page
       const hasMoreImagesFromArtwork = artworks.value.some(item => 
         item.artwork_id === artwork.artwork_id && 
-        item.image_id !== artwork.image_id && 
         selectedImages.value.has(item.image_id)
       )
       
-      // If no more images from this artwork are selected, remove artwork from selection
       if (!hasMoreImagesFromArtwork) {
         selectedArtworks.value.delete(artwork.artwork_id)
       }
