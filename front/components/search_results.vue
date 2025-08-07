@@ -308,12 +308,25 @@ const fetchResults = async (searchQuery, page = 1) => {
     currentPage.value = page
     
     // Check if this is a single tag search
-    if (searchQuery && !searchQuery.includes(' ') && !searchQuery.includes(':') && !searchQuery.includes('-')) {
+    const isSimpleTagQuery = (q) => {
+      if (!q) return false;
+      // A simple query should not contain parser operators like ':', '(', ')'
+      // or boolean keywords. We allow spaces and hyphens in the tag name itself.
+      // We will test the query after stripping potential surrounding quotes.
+      const coreQuery = q.trim().replace(/^"(.*)"$/, '$1').trim();
+      const complexChars = /[:()]/;
+      const complexKeywords = /\b(AND|OR)\b/i;
+      return !complexChars.test(coreQuery) && !complexKeywords.test(coreQuery);
+    }
+
+    if (isSimpleTagQuery(searchQuery)) {
       try {
-        const tagResponse = await $fetch(`/api/tag-by-name/${encodeURIComponent(searchQuery)}`)
+        // Remove quotes for the API call if they exist
+        const tagName = searchQuery.trim().replace(/^"(.*)"$/, '$1').trim();
+        const tagResponse = await $fetch(`/api/tag-by-name/${encodeURIComponent(tagName)}`)
         tagInfo.value = tagResponse.tag
       } catch (tagErr) {
-        console.error('Error fetching tag info:', tagErr)
+        // This is expected if the tag doesn't exist, so we don't need to log it.
       }
     }
   } catch (err) {
