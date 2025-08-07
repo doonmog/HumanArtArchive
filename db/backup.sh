@@ -46,7 +46,7 @@ echo "Starting database backup for '${POSTGRES_DB}'..."
 # which has the necessary permissions.
 # Note: This does not require the password because of the default trust
 # authentication for local connections within the container.
-docker exec -t "${CONTAINER_NAME}" pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" | gzip > "${BACKUP_FILE}"
+docker exec -t "${CONTAINER_NAME}" pg_dump --clean --if-exists -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" | gzip > "${BACKUP_FILE}"
 
 # Check if the backup command was successful
 if [ ${PIPESTATUS[0]} -ne 0 ]; then

@@ -54,7 +54,11 @@ echo "Starting database restore from '${BACKUP_FILE}'..."
 
 # Decompress the backup and pipe it to psql inside the container.
 # The 'psql' command will execute the SQL script from the backup.
-gunzip < "$BACKUP_FILE" | docker exec -i "${CONTAINER_NAME}" psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"
+# Decompress the backup and pipe it to psql inside the container.
+# Decompress the backup and pipe it to psql inside the container.
+# We run this as the POSTGRES_USER from the .env file, which is the
+# superuser for this database instance and has the necessary permissions.
+gunzip < "$BACKUP_FILE" | docker exec -i "${CONTAINER_NAME}" psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"
 
 # Check if the restore command was successful
 if [ ${PIPESTATUS[1]} -ne 0 ]; then
