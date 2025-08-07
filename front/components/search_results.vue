@@ -108,17 +108,18 @@
         :class="{ 'ring-2 ring-blue-500': isAdmin && selectedImages.has(artwork.image_id) }"
       >
         <!-- Selection checkbox for admin -->
-        <div v-if="isAdmin" class="absolute top-2 left-2 z-10">
+        <div v-if="isAdmin" class="absolute top-3 left-3 z-10">
           <input
             type="checkbox"
-            :checked="artwork.image_id ? selectedImages.has(artwork.image_id) : selectedArtworks.has(artwork.artwork_id)"
+            :checked="selectedImages.has(artwork.image_id)"
             @change="toggleSelection(artwork)"
-            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            class="h-8 w-8 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
           />
         </div>
 
         <NuxtLink
           :to="getArtworkLink(artwork)"
+          @click.prevent="confirmArtworkNavigation($event, getArtworkLink(artwork))"
           class="block cursor-pointer hover:scale-105 transition-transform duration-200"
         >
         <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
@@ -261,6 +262,8 @@
 </template>
 
 <script setup>
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import BulkAddTags from './bulk_add_tags.vue'
 
 const props = defineProps({
@@ -353,6 +356,16 @@ const getArtworkLink = (artwork) => {
     params.set('image_id', artwork.image_id)
   }
   return `${baseUrl}?${params.toString()}`
+}
+
+const confirmArtworkNavigation = (event, path) => {
+  if (selectedImages.value.size > 0) {
+    if (window.confirm('You have selected artworks. Are you sure you want to leave this page?')) {
+      router.push(path)
+    }
+  } else {
+    router.push(path)
+  }
 }
 
 // Multi-select computed properties
@@ -531,6 +544,51 @@ watch(() => props.page, (newPage) => {
     fetchResults(props.query, newPage)
   }
 }, { immediate: true })
+
+// Navigation prevention when artworks are selected
+const beforeUnloadHandler = (event) => {
+  if (selectedImages.value.size > 0) {
+    const message = 'You have selected artworks. Are you sure you want to leave this page?'
+    event.preventDefault()
+    event.returnValue = message
+    return message
+  }
+}
+
+// Add navigation prevention for browser back/forward and page refreshes
+onMounted(() => {
+  window.addEventListener('beforeunload', beforeUnloadHandler)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', beforeUnloadHandler)
+})
+
+// Add navigation prevention for internal Nuxt navigation
+const confirmNavigation = (to, from, next) => {
+  if (selectedImages.value.size > 0) {
+    if (window.confirm('You have selected artworks. Are you sure you want to leave this page?')) {
+      next()
+    } else {
+      next(false)
+    }
+  } else {
+    next()
+  }
+}
+
+onMounted(() => {
+  router.beforeEach(confirmNavigation)
+})
+
+onBeforeUnmount(() => {
+  // Remove the navigation guard when component is unmounted
+  const routerInstance = router
+  const guardIndex = routerInstance.beforeHooks.indexOf(confirmNavigation)
+  if (guardIndex >= 0) {
+    routerInstance.beforeHooks.splice(guardIndex, 1)
+  }
+})
 </script>
 
 <style scoped>
