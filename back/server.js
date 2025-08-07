@@ -5,9 +5,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../db/.env') });
 
-const dbTestRoutes = require('./test/db-test.js');
-const getTestRoutes = require('./test/get-test.js');
-const tagTestRoutes = require('./test/tag-test.js');
+
 const getArtRoutes = require('./user/get-art.js');
 const getImageRoutes = require('./user/get-image.js');
 const getArtworkDetailsRoutes = require('./user/get-artwork-details.js');
@@ -68,13 +66,11 @@ app.get('/', (req, res) => {
 // This strips '/api' from requests before forwarding to backend.
 // Example: Frontend calls '/api/art' -> Backend receives '/art'
 // Therefore, all API routes must be mounted at root ('/') not '/api'
-app.use('/db-test', dbTestRoutes(pool));
-app.use('/', getTestRoutes(pool));
 app.use('/', getArtRoutes(pool));
 app.use('/', getImageRoutes(pool));
 app.use('/', getArtworkDetailsRoutes(pool));
 app.use('/', getTagsRoutes(pool));
-app.use('/', tagTestRoutes(pool));
+
 app.use('/auth', authRoutes(pool));
 app.use('/admin', uploadArtworkRoutes(pool));
 app.use('/admin', updateTagsRoutes(pool));
