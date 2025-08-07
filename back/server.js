@@ -15,6 +15,7 @@ const getTagsRoutes = require('./user/get-tags.js');
 const authRoutes = require('./auth/auth.js');
 const uploadArtworkRoutes = require('./admin/upload-artwork.js');
 const updateTagsRoutes = require('./admin/update-tags.js');
+const manageArtworkRoutes = require('./admin/manage-artwork.js');
 
 const app = express();
 const port = 3001;
@@ -76,6 +77,7 @@ app.use('/', tagTestRoutes(pool));
 app.use('/auth', authRoutes(pool));
 app.use('/admin', uploadArtworkRoutes(pool));
 app.use('/admin', updateTagsRoutes(pool));
+app.use('/admin', manageArtworkRoutes(pool));
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

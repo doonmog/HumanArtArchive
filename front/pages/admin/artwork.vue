@@ -57,6 +57,15 @@
               />
             </div>
           </div>
+          
+          <!-- Admin Artwork Management Section -->
+          <ManageArtwork 
+            v-if="artwork"
+            :artwork="artwork"
+            @artwork-updated="onArtworkUpdated"
+            @artwork-deleted="onArtworkDeleted"
+            @image-deleted="onImageDeleted"
+          />
         </template>
       </ArtworkDisplay>
     </div>
@@ -67,6 +76,7 @@
 import Header from '../../components/header.vue'
 import ArtworkDisplay from '../../components/artwork_display.vue'
 import AddTags from '../../components/add_tags.vue'
+import ManageArtwork from '../../components/manage_artwork.vue'
 
 definePageMeta({
   middleware: 'admin-auth'
@@ -133,6 +143,26 @@ const removeTag = async (tagId) => {
 const onTagsApplied = async () => {
   // Refresh artwork data to show newly added tags
   await artworkDisplayRef.value.fetchArtwork(artworkId.value, currentImage.value?.image_id || artworkDisplayRef.value?.currentImage?.image_id)
+}
+
+const onArtworkUpdated = async () => {
+  // Refresh artwork data to show updated details
+  await artworkDisplayRef.value.fetchArtwork(artworkId.value, currentImage.value?.image_id || artworkDisplayRef.value?.currentImage?.image_id)
+}
+
+const onArtworkDeleted = () => {
+  // Navigation is handled by the component itself
+  console.log('Artwork deleted, navigating to admin overview')
+}
+
+const onImageDeleted = async (imageId) => {
+  // Refresh artwork data to remove deleted image
+  await artworkDisplayRef.value.fetchArtwork(artworkId.value, currentImage.value?.image_id || artworkDisplayRef.value?.currentImage?.image_id)
+  
+  // If the deleted image was the currently selected one, clear the selection
+  if (currentImage.value?.image_id === imageId) {
+    currentImage.value = null
+  }
 }
 
 useHead({

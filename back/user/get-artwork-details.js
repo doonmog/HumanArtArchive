@@ -33,6 +33,8 @@ module.exports = (pool) => {
         SELECT 
           i.image_id,
           i.display_order,
+          i.filesize,
+          i.resolution,
           CASE WHEN i.image IS NOT NULL THEN true ELSE false END as has_image
         FROM image i
         WHERE i.artwork_id = $1
