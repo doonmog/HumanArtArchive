@@ -3,6 +3,7 @@ class SearchParser {
     this.tokens = [];
     this.position = 0;
     this.parameters = [];
+    this.hasVersionFilter = false;
   }
 
   tokenize(query) {
@@ -81,11 +82,13 @@ class SearchParser {
     this.tokens = this.tokenize(query);
     this.position = 0;
     this.parameters = [];
+    this.hasVersionFilter = false;
     
     const ast = this.parseExpression();
     return {
       whereClause: this.generateSQL(ast),
-      parameters: this.parameters
+      parameters: this.parameters,
+      hasVersionFilter: this.hasVersionFilter
     };
   }
 
@@ -234,6 +237,9 @@ class SearchParser {
   }
 
   generateTagSQL(tagValue) {
+    // Add display_order filter if version filter is active
+    const displayOrderFilter = this.hasVersionFilter ? ' AND i2.display_order = 1' : '';
+    
     if (tagValue.includes('-')) {
       const [groupName, tagName] = tagValue.split('-', 2);
       this.parameters.push(groupName);
@@ -241,10 +247,9 @@ class SearchParser {
       const groupParamIndex = this.parameters.length - 1;
       const tagParamIndex = this.parameters.length;
       
-      return `a.artwork_id IN (
-        SELECT DISTINCT i2.artwork_id
-        FROM image i2
-        JOIN image_tags it ON i2.image_id = it.image_id
+      return `i2.image_id IN (
+        SELECT DISTINCT it.image_id
+        FROM image_tags it
         JOIN tag t ON it.tag_id = t.tag_id
         JOIN tag_group tg ON t.group_id = tg.group_id
         WHERE LOWER(tg.name) = $${groupParamIndex} AND LOWER(t.name) = $${tagParamIndex}
@@ -252,10 +257,9 @@ class SearchParser {
     } else {
       this.parameters.push(tagValue);
       const paramIndex = this.parameters.length;
-      return `a.artwork_id IN (
-        SELECT DISTINCT i2.artwork_id
-        FROM image i2
-        JOIN image_tags it ON i2.image_id = it.image_id
+      return `i2.image_id IN (
+        SELECT DISTINCT it.image_id
+        FROM image_tags it
         JOIN tag t ON it.tag_id = t.tag_id
         WHERE LOWER(t.name) = $${paramIndex}
       )`;
@@ -301,6 +305,14 @@ class SearchParser {
         const paramIndex = this.parameters.length;
         return `a.year ${sqlOperator} $${paramIndex}`;
         
+      case 'version':
+        this.hasVersionFilter = true;
+        if (value.toLowerCase() === 'primary') {
+          return `i2.display_order = 1`;
+        } else {
+          throw new Error(`Unknown version value: ${value}. Use 'primary' for primary images.`);
+        }
+        
       default:
         throw new Error(`Unknown field: ${field}`);
     }
@@ -311,7 +323,8 @@ function parseSearchQuery(query) {
   if (!query || query.trim() === '') {
     return {
       whereClause: '1=1',
-      parameters: []
+      parameters: [],
+      hasVersionFilter: false
     };
   }
   

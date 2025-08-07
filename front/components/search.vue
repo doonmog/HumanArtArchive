@@ -22,12 +22,26 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { navigateTo } from 'nuxt/app'
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'nuxt/app'
 
-const searchQuery = ref('')
+const route = useRoute()
+const router = useRouter()
+
+// Initialize searchQuery from the current route's query parameter
+const searchQuery = ref(route.query.q || '')
+
+// Watch for route changes and update the searchQuery accordingly
+watch(() => route.query.q, (newQuery) => {
+  searchQuery.value = newQuery || ''
+})
 
 const handleSearch = () => {
-  navigateTo(`/search?q=${encodeURIComponent(searchQuery.value.trim())}`)
+  const query = searchQuery.value.trim()
+  if (query) {
+    router.push({ path: '/search', query: { q: query } })
+  } else {
+    router.push({ path: '/search' })
+  }
 }
 </script>

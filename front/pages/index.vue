@@ -14,7 +14,7 @@ import Search from '../components/search.vue'
     
     <div class="mt-8 flex gap-6">
       <NuxtLink 
-        to="/search?q=" 
+        to="/search?q=version%3Aprimary" 
         class="text-lg text-blue-600 hover:text-blue-800 hover:underline transition-colors"
       >
         View all art

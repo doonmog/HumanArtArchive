@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../db/.env') });
 
 const dbTestRoutes = require('./test/db-test.js');
 const getTestRoutes = require('./test/get-test.js');
@@ -9,6 +11,11 @@ const tagTestRoutes = require('./test/tag-test.js');
 const getArtRoutes = require('./user/get-art.js');
 const getImageRoutes = require('./user/get-image.js');
 const getArtworkDetailsRoutes = require('./user/get-artwork-details.js');
+const getTagsRoutes = require('./user/get-tags.js');
+const authRoutes = require('./auth/auth.js');
+const uploadArtworkRoutes = require('./admin/upload-artwork.js');
+const updateTagsRoutes = require('./admin/update-tags.js');
+const manageArtworkRoutes = require('./admin/manage-artwork.js');
 
 const app = express();
 const port = 3001;
@@ -30,6 +37,8 @@ app.use(cors({
 }));
 app.use(express.json());
 
+const RATE_LIMIT_BYPASS_KEY = process.env.RATE_LIMIT_BYPASS_KEY;
+
 // Rate limiting middleware
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -39,6 +48,11 @@ const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting if valid bypass key is provided
+  skip: (req, res) => {
+    const bypassKey = req.headers['x-rate-limit-bypass'];
+    return bypassKey === RATE_LIMIT_BYPASS_KEY;
+  }
 });
 
 // Apply rate limiting to all requests
@@ -55,10 +69,15 @@ app.get('/', (req, res) => {
 // Therefore, all API routes must be mounted at root ('/') not '/api'
 app.use('/db-test', dbTestRoutes(pool));
 app.use('/', getTestRoutes(pool));
-app.use('/', tagTestRoutes(pool));
 app.use('/', getArtRoutes(pool));
 app.use('/', getImageRoutes(pool));
 app.use('/', getArtworkDetailsRoutes(pool));
+app.use('/', getTagsRoutes(pool));
+app.use('/', tagTestRoutes(pool));
+app.use('/auth', authRoutes(pool));
+app.use('/admin', uploadArtworkRoutes(pool));
+app.use('/admin', updateTagsRoutes(pool));
+app.use('/admin', manageArtworkRoutes(pool));
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
