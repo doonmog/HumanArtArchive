@@ -155,26 +155,40 @@ const handleSearch = async () => {
     return
   }
 
-  // Get tag names for selected tag IDs
+  // Get tag names for selected tag IDs with their group names
   const selectedTagNames = []
   categories.value.forEach(category => {
     category.groups.forEach(group => {
       group.tags.forEach(tag => {
         if (selectedTags.value.includes(tag.tagId)) {
-          // Add tag name to the list, properly formatted for search
+          // Add tag name to the list with group name, properly formatted for search
           const tagName = tag.name
-          // If tag contains spaces, wrap it in quotes
-          if (tagName.includes(' ')) {
-            selectedTagNames.push(`"${tagName}"`)
+          const groupName = group.name
+          
+          // Format as groupName-tagName
+          let formattedTag = ''
+          
+          // If group name contains spaces, wrap it in quotes
+          if (groupName.includes(' ')) {
+            formattedTag = `"${groupName}"-`
           } else {
-            selectedTagNames.push(tagName)
+            formattedTag = `${groupName}-`
           }
+          
+          // If tag name contains spaces, wrap it in quotes
+          if (tagName.includes(' ')) {
+            formattedTag += `"${tagName}"`
+          } else {
+            formattedTag += tagName
+          }
+          
+          selectedTagNames.push(formattedTag)
         }
       })
     })
   })
 
-  // Build search query string with properly quoted multi-word tags
+  // Build search query string with properly formatted tags
   const tagQuery = selectedTagNames.join(' ')
   let finalQuery = tagQuery
 

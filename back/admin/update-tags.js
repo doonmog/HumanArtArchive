@@ -173,66 +173,6 @@ module.exports = (pool) => {
   });
   
   // Create a new tag group
-  router.post('/create-tag-group', verifyAdminToken, async (req, res) => {
-    const client = await pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      
-      const { categoryId, name, description } = req.body;
-      
-      if (!categoryId || !name) {
-        return res.status(400).json({ message: 'Category ID and group name are required' });
-      }
-      
-      // Verify category exists
-      const categoryResult = await client.query(
-        'SELECT category_id FROM category WHERE category_id = $1',
-        [categoryId]
-      );
-      
-      if (categoryResult.rows.length === 0) {
-        return res.status(404).json({ message: 'Category not found' });
-      }
-      
-      // Check if tag group with this name already exists in the category
-      const existingGroupResult = await client.query(
-        'SELECT group_id FROM tag_group WHERE name = $1 AND category_id = $2',
-        [name, categoryId]
-      );
-      
-      if (existingGroupResult.rows.length > 0) {
-        return res.status(409).json({ message: 'Tag group with this name already exists in the category' });
-      }
-      
-      // Create new tag group
-      const newGroupResult = await client.query(
-        'INSERT INTO tag_group (category_id, name, description) VALUES ($1, $2, $3) RETURNING group_id, name',
-        [categoryId, name.trim(), description?.trim() || null]
-      );
-      
-      await client.query('COMMIT');
-      
-      res.json({
-        message: 'Tag group created successfully',
-        group: {
-          groupId: newGroupResult.rows[0].group_id,
-          name: newGroupResult.rows[0].name,
-          description: description?.trim() || null,
-          categoryId: categoryId,
-          tags: []
-        }
-      });
-      
-    } catch (error) {
-      await client.query('ROLLBACK');
-      console.error('Tag group creation error:', error);
-      res.status(500).json({ message: 'Failed to create tag group' });
-    } finally {
-      client.release();
-    }
-  });
-  
   // Remove tag from artwork/image
   router.post('/remove-tag', verifyAdminToken, async (req, res) => {
     const client = await pool.connect();

@@ -16,7 +16,7 @@ In the search bar, you can type tags, such as - `female`: This returns all artwo
 Note that tags which are multiple words long must be placed inside of quotation marks.
 
 ### Tag Groups
-Some tags appear multiple times, as part of different tag groups. For example, `white` can both represent a person's hair, or a person's skin. If you are only looking for characters with white hair, and not with white skin, you can search for white within the tag group hair like so: `hair:white`.
+Some tags appear multiple times, as part of different tag groups. For example, `white` can both represent a person's hair, or a person's skin. If you are only looking for characters with white hair, and not with white skin, you can search for white within the tag group hair like so: `hair-white`.
 
 ### Operators
 You can use the operators AND, OR, NOT, and (). 

@@ -71,7 +71,6 @@ BEGIN
     (medium_group_id, 'Oil on Canvas', 'Artwork created using oil paint on canvas'),
     (medium_group_id, 'Fresco', 'Artwork created using pigments on wet plaster'),
     (medium_group_id, 'Ink on Paper', 'Artwork created using ink on paper'),
-    (art_movement_group_id, 'Renaissance', 'Artwork from the European Renaissance period (14th-17th century)')
-    ON CONFLICT (name) DO NOTHING;
+    (art_movement_group_id, 'Renaissance', 'Artwork from the European Renaissance period (14th-17th century)');
 
 END $$;
