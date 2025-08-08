@@ -10,6 +10,7 @@ const getArtRoutes = require('./user/get-art.js');
 const getImageRoutes = require('./user/get-image.js');
 const getArtworkDetailsRoutes = require('./user/get-artwork-details.js');
 const getTagsRoutes = require('./user/get-tags.js');
+const getUsedTagsRoutes = require('./user/get-used-tags.js');
 const authRoutes = require('./auth/auth.js');
 const uploadArtworkRoutes = require('./admin/upload-artwork.js');
 const updateTagsRoutes = require('./admin/update-tags.js');
@@ -70,6 +71,7 @@ app.use('/', getArtRoutes(pool));
 app.use('/', getImageRoutes(pool));
 app.use('/', getArtworkDetailsRoutes(pool));
 app.use('/', getTagsRoutes(pool));
+app.use('/', getUsedTagsRoutes(pool));
 
 app.use('/auth', authRoutes(pool));
 app.use('/admin', uploadArtworkRoutes(pool));

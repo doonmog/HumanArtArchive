@@ -93,12 +93,12 @@ const openGroups = ref([])
 const loading = ref(true)
 const showAlternateVersions = ref(false)
 
-// Fetch all categories, tag groups, and tags
+// Fetch only categories, tag groups, and tags that are associated with at least one artwork
 onMounted(async () => {
   try {
-    const response = await fetch('/api/tags')
+    const response = await fetch('/api/used-tags')
     if (!response.ok) {
-      throw new Error('Failed to fetch tags')
+      throw new Error('Failed to fetch used tags')
     }
     const data = await response.json()
     categories.value = data.categories || []
@@ -106,7 +106,7 @@ onMounted(async () => {
     // All tag groups are closed by default
     // No need to push any group IDs to openGroups
   } catch (error) {
-    console.error('Error fetching tags:', error)
+    console.error('Error fetching used tags:', error)
   } finally {
     loading.value = false
   }
