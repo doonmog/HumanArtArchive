@@ -51,7 +51,7 @@
           </button>
         </div>
       </div>
-      <div class="mt-4">
+      <div class="mt-4 flex flex-wrap items-center gap-4">
         <label class="flex items-center">
           <input
             type="checkbox"
@@ -62,6 +62,18 @@
             Select each image of artwork
           </span>
         </label>
+        
+        <div class="flex items-center">
+          <label for="items-per-page" class="mr-2 text-sm font-medium text-gray-700">Items per page:</label>
+          <select
+            id="items-per-page"
+            v-model="itemsPerPage"
+            @change="onPageSizeChange"
+            class="bg-white border border-gray-300 text-gray-700 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block p-2"
+          >
+            <option v-for="size in availablePageSizes" :key="size" :value="size">{{ size }}</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -295,7 +307,8 @@ const pending = ref(false)
 const error = ref(null)
 const tagInfoList = ref([])
 const currentPage = ref(1)
-const itemsPerPage = 60
+const itemsPerPage = ref(60)
+const availablePageSizes = [60, 120, 180, 240]
 
 const fetchResults = async (searchQuery, page = 1) => {
   try {
@@ -307,7 +320,7 @@ const fetchResults = async (searchQuery, page = 1) => {
       query: { 
         q: searchQuery,
         page: page,
-        limit: itemsPerPage
+        limit: itemsPerPage.value
       }
     })
     searchResults.value = response
@@ -504,6 +517,22 @@ const onBulkTagsApplied = () => {
   fetchResults(props.query, currentPage.value)
 }
 
+const onPageSizeChange = () => {
+  // Save the selected page size to localStorage for persistence
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('artArchivePageSize', itemsPerPage.value.toString())
+  }
+  
+  // Reset to page 1 and refetch with new page size
+  currentPage.value = 1
+  fetchResults(props.query, 1)
+  
+  // Update URL to page 1
+  const query = { ...route.query }
+  delete query.page
+  router.push({ query })
+}
+
 const router = useRouter()
 const route = useRoute()
 
@@ -593,6 +622,14 @@ const beforeUnloadHandler = (event) => {
 // Add navigation prevention for browser back/forward and page refreshes
 onMounted(() => {
   window.addEventListener('beforeunload', beforeUnloadHandler)
+  
+  // Load saved page size from localStorage if available
+  if (typeof localStorage !== 'undefined') {
+    const savedPageSize = localStorage.getItem('artArchivePageSize')
+    if (savedPageSize && availablePageSizes.includes(parseInt(savedPageSize))) {
+      itemsPerPage.value = parseInt(savedPageSize)
+    }
+  }
 })
 
 onBeforeUnmount(() => {

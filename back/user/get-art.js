@@ -12,7 +12,7 @@ module.exports = (pool) => {
       
       // Parse pagination parameters
       const pageNum = Math.max(1, parseInt(page) || 1);
-      const limitNum = Math.min(Math.max(1, parseInt(limit) || 60), 200); // Cap at 200
+      const limitNum = Math.min(Math.max(1, parseInt(limit) || 60), 240); // Cap at 240
       const offset = (pageNum - 1) * limitNum;
       
       let searchQuery = '';
