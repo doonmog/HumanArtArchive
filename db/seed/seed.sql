@@ -71,7 +71,9 @@ BEGIN
     -- Art Movement
     ((SELECT group_id FROM tag_group WHERE name = 'Art Movement'), 'Renaissance', 'Artwork from the European Renaissance period (14th-17th century)'),
     ((SELECT group_id FROM tag_group WHERE name = 'Art Movement'), 'Baroque', 'Artwork from the Baroque period (17th-18th century)'),
-    ((SELECT group_id FROM tag_group WHERE name = 'Art Movement'), 'Pre-Raphaelite', 'Artwork from the Pre-Raphaelite movement (19th century)'),
+    
+    --((SELECT group_id FROM tag_group WHERE name = 'Art Movement'), 'Pre-Raphaelite', 'Artwork from the Pre-Raphaelite movement (19th century)'),
+    -- Tags can't have hyphens in them.
 
     -- Setting
     ((SELECT group_id FROM tag_group WHERE name = 'Setting'), 'Fantasy', 'Set in a fantastical or imaginary world'),
