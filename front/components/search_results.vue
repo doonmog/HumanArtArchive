@@ -1,15 +1,18 @@
 <template>
   <div class="relative">
     <div class="mb-8">
-      <h1 v-if="tagInfo" class="text-4xl font-bold text-black mb-2">
-        {{ tagInfo.name }}
+      <h1 v-if="tagInfoList && tagInfoList.length > 0" class="text-4xl font-bold text-black mb-2">
+        {{ tagInfoList[0].name }}
       </h1>
       <h1 v-else class="text-3xl font-bold text-black mb-2">
         Search Results
       </h1>
-      <p v-if="tagInfo && tagInfo.description" class="text-lg text-black mb-4">
-        {{ tagInfo.description }}
-      </p>
+      <div v-if="tagInfoList && tagInfoList.length > 0" class="space-y-4">
+        <div v-for="(tag, index) in tagInfoList" :key="tag.tag_id" class="text-lg text-black">
+          <div v-if="tagInfoList.length > 1" class="font-medium">{{ tag.full_tag_name }}:</div>
+          <p>{{ tag.description }}</p>
+        </div>
+      </div>
       <p v-if="query" class="text-gray-600">
         Showing results for: <span class="font-medium">"{{ query }}"</span>
       </p>
@@ -290,7 +293,7 @@ const showEditSidebar = ref(false)
 const searchResults = ref(null)
 const pending = ref(false)
 const error = ref(null)
-const tagInfo = ref(null)
+const tagInfoList = ref([])
 const currentPage = ref(1)
 const itemsPerPage = 60
 
@@ -298,7 +301,7 @@ const fetchResults = async (searchQuery, page = 1) => {
   try {
     pending.value = true
     error.value = null
-    tagInfo.value = null
+    tagInfoList.value = []
     
     const response = await $fetch('/api/art', {
       query: { 
@@ -310,24 +313,56 @@ const fetchResults = async (searchQuery, page = 1) => {
     searchResults.value = response
     currentPage.value = page
     
-    // Check if this is a single tag search
-    const isSimpleTagQuery = (q) => {
-      if (!q) return false;
-      // A simple query should not contain parser operators like ':', '(', ')'
-      // or boolean keywords. We allow spaces and hyphens in the tag name itself.
-      // We will test the query after stripping potential surrounding quotes.
-      const coreQuery = q.trim().replace(/^"(.*)"$/, '$1').trim();
-      const complexChars = /[:()]/;
-      const complexKeywords = /\b(AND|OR)\b/i;
-      return !complexChars.test(coreQuery) && !complexKeywords.test(coreQuery);
-    }
+    // Check if this is a tag search that should show a description
+    const extractTagForDescription = (q) => {
+      if (!q) return null;
+      
+      // Clean the query by removing quotes
+      const cleanQuery = q.trim().replace(/^"(.*)"$/, '$1').trim();
+      
+      // Case 1: Simple tag like "black"
+      if (!/[:()]/g.test(cleanQuery) && !/\b(AND|OR)\b/i.test(cleanQuery)) {
+        return cleanQuery;
+      }
+      
+      // Case 2: Compound tag like "hair-black"
+      if (/^[a-zA-Z]+-[a-zA-Z]+$/.test(cleanQuery)) {
+        // For compound tags like "hair-black", extract the second part ("black")
+        const parts = cleanQuery.split('-');
+        if (parts.length === 2) {
+          return parts[1];
+        }
+      }
+      
+      // Case 3: Query with only "version:primary" and a tag
+      const versionPrimaryRegex = /^version:primary\s+([a-zA-Z-]+)$|^([a-zA-Z-]+)\s+version:primary$/i;
+      const versionMatch = cleanQuery.match(versionPrimaryRegex);
+      if (versionMatch) {
+        // Return the tag part (either group 1 or 2 will have the tag)
+        const tag = versionMatch[1] || versionMatch[2];
+        
+        // If it's a compound tag, extract the second part
+        if (tag && tag.includes('-')) {
+          const parts = tag.split('-');
+          if (parts.length === 2) {
+            return parts[1];
+          }
+        }
+        
+        return tag;
+      }
+      
+      return null;
+    };
 
-    if (isSimpleTagQuery(searchQuery)) {
+    const tagForDescription = extractTagForDescription(searchQuery);
+    if (tagForDescription) {
       try {
-        // Remove quotes for the API call if they exist
-        const tagName = searchQuery.trim().replace(/^"(.*)"$/, '$1').trim();
-        const tagResponse = await $fetch(`/api/tag-by-name/${encodeURIComponent(tagName)}`)
-        tagInfo.value = tagResponse.tag
+        const tagResponse = await $fetch(`/api/tag-by-name/${encodeURIComponent(tagForDescription)}`)
+        // The API now returns an array of tags instead of a single tag
+        if (tagResponse.tags && tagResponse.tags.length > 0) {
+          tagInfoList.value = tagResponse.tags
+        }
       } catch (tagErr) {
         // This is expected if the tag doesn't exist, so we don't need to log it.
       }

@@ -19,6 +19,7 @@ BEGIN
     ((SELECT category_id FROM category WHERE name = 'Meta'),    'Features',    'Fictional named characters in the artwork'),
     ((SELECT category_id FROM category WHERE name = 'Meta'),    'Depicts',    'Real-life people in the artwork'),
     ((SELECT category_id FROM category WHERE name = 'Meta'),    'Collection',    'Artwork is part of this collection:'),
+    ((SELECT category_id FROM category WHERE name = 'Meta'),    'Art Movement','Art movement or period associated with the artwork'),
 
     -- Form
     ((SELECT category_id FROM category WHERE name = 'Form'),    'Landscape', 'Landscape and environmental compositions'),
@@ -26,12 +27,12 @@ BEGIN
     ((SELECT category_id FROM category WHERE name = 'Form'),    'Style',     'Artistic style and visual approach'),
     ((SELECT category_id FROM category WHERE name = 'Form'),    'Setting', 'Environment or world in which the subject exists'),
     ((SELECT category_id FROM category WHERE name = 'Form'),    'Mood', 'Mood or emotional tone of the artwork'),
-    ((SELECT category_id FROM category WHERE name = 'Form'),    'Art Movement','Art movement or period associated with the artwork'),
 
     -- Content
     ((SELECT category_id FROM category WHERE name = 'Content'), 'Gender',    'Gender representation in artworks'),
     ((SELECT category_id FROM category WHERE name = 'Content'), 'Hair',      'Hair characteristics and styles'),
     ((SELECT category_id FROM category WHERE name = 'Content'), 'Species', 'Species or race of figures in the artwork'),
+    ((SELECT category_id FROM category WHERE name = 'Content'), 'Creatures', 'Non-Humanoid creatures or monsters in the artwork'),
     ((SELECT category_id FROM category WHERE name = 'Content'), 'Eyes', 'Eye color or state of characters'),
     ((SELECT category_id FROM category WHERE name = 'Content'), 'Skin', 'Skin tone or condition of characters'),
     ((SELECT category_id FROM category WHERE name = 'Content'), 'Clothes', 'Clothing worn by characters'),
@@ -54,6 +55,8 @@ BEGIN
 
     -- Style
     ((SELECT group_id FROM tag_group WHERE name = 'Style'),     'Cartoon', 'Artwork created in cartoon or animated style'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Style'),     'Sketch', 'Artwork created quickly to capture an idea or composition'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Style'),     'Realism', 'Artwork created to accurately depict reality'),
     
     -- Medium
     ((SELECT group_id FROM tag_group WHERE name = 'Medium'),    'Oil on Panel', 'Artwork created using oil paint on wooden panel'),
@@ -87,13 +90,22 @@ BEGIN
     ((SELECT group_id FROM tag_group WHERE name = 'Hair'),      'Brown', 'Brown hair depicted in the artwork'),
     ((SELECT group_id FROM tag_group WHERE name = 'Hair'),      'Black', 'Black hair depicted in the artwork'),
     ((SELECT group_id FROM tag_group WHERE name = 'Hair'),      'Blonde', 'Blonde hair depicted in the artwork'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Hair'),      'Red', 'Red hair depicted in the artwork'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Hair'),      'White', 'White hair depicted in the artwork'),
+
+    -- Facial Hair
+    ((SELECT group_id FROM tag_group WHERE name = 'Facial Hair'),      'Mustache', 'Mustache depicted in the artwork'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Facial Hair'),      'Beard', 'Beard depicted in the artwork'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Facial Hair'),      'Goatee', 'Goatee depicted in the artwork'),
 
     -- Mood
     ((SELECT group_id FROM tag_group WHERE name = 'Mood'), 'Grim', 'Artwork conveys a grim or dark tone'),
     ((SELECT group_id FROM tag_group WHERE name = 'Mood'), 'Celebratory', 'Artwork depicts celebration or joy'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Mood'), 'Serious', 'Artwork depicts a serious or solemn mood'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Mood'), 'Happy', 'Artwork depicts happiness or joy'),
 
     -- Species
-    ((SELECT group_id FROM tag_group WHERE name = 'Species'), 'Humanoid', 'Humanoid subjects - Use this tag for anthropomorphic figures.'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Species'), 'Humanoid', 'Humanoid subjects - Use this tag in combination with a creatures tag for anthropomorphic figures.'),
     ---- Tolkienesque
     ((SELECT group_id FROM tag_group WHERE name = 'Species'), 'Human', 'Human subjects'),
     ((SELECT group_id FROM tag_group WHERE name = 'Species'), 'Elf', 'Elf or elven subjects'),
@@ -114,19 +126,39 @@ BEGIN
     ((SELECT group_id FROM tag_group WHERE name = 'Species'), 'Minotaur', 'Humanoid bull creatures'),
     ((SELECT group_id FROM tag_group WHERE name = 'Species'), 'Centaur', 'Half-human, half-horse beings'),
     ((SELECT group_id FROM tag_group WHERE name = 'Species'), 'Construct', 'Artificial beings such as golems'),
-    ---- Bestial
-    ((SELECT group_id FROM tag_group WHERE name = 'Species'), 'Snake', 'Serpentine humanoid beings'),
-    ((SELECT group_id FROM tag_group WHERE name = 'Species'), 'Dragon', 'Dragon or draconic humanoid characters'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Species'), 'Spirit', 'Ghostly or non-corporeal beings'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Species'), 'Giant', 'Gigantic beings'),
+    
+    -- Creatures (non-humanoids)
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Snake', 'Serpentine humanoid beings'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Dragon', 'Dragon or draconic humanoid characters'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Frog', 'Frog creatures'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Hawk', 'Hawk or falcon creatures'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Wolf', 'Wolf or werewolf creatures'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Bat', 'Bat creatures'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Bunny', 'Bunny or rabbit creatures'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Bunnicorn', 'Bunny or rabbit creatures with horns'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Butterfly', 'Butterfly or moth creatures'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Cat', 'Feline creatures'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Dog', 'Canine creatures'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Horse', 'Equine creatures'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Mouse', 'Rodent creatures'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Spider', 'Arachnid creatures'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Creatures'), 'Turtle', 'Reptilian creatures with shells'),
 
     -- Eyes
     ((SELECT group_id FROM tag_group WHERE name = 'Eyes'), 'Green', 'Characters with green eyes'),
     ((SELECT group_id FROM tag_group WHERE name = 'Eyes'), 'Blue', 'Characters with blue eyes'),
     ((SELECT group_id FROM tag_group WHERE name = 'Eyes'), 'Brown', 'Characters with brown eyes'),
     ((SELECT group_id FROM tag_group WHERE name = 'Eyes'), 'Purple', 'Characters with purple eyes'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Eyes'), 'Red', 'Characters with red eyes'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Eyes'), 'Yellow', 'Characters with yellow eyes'),
     ((SELECT group_id FROM tag_group WHERE name = 'Eyes'), 'Closed', 'Characters with closed eyes'),
     ((SELECT group_id FROM tag_group WHERE name = 'Eyes'), 'Blind', 'Characters with blind or non-functional eyes'),
     ((SELECT group_id FROM tag_group WHERE name = 'Eyes'), 'Heterochromia', 'Characters with differently colored eyes'),
     ((SELECT group_id FROM tag_group WHERE name = 'Eyes'), 'Blindfold', 'Characters wearing blindfolds'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Eyes'), 'Glowing', 'Characters with eyes that glow'),
+
     -- Skin
     ((SELECT group_id FROM tag_group WHERE name = 'Skin'), 'Fair', 'Artwork depicts characters with fair/light skin tone'),
     ((SELECT group_id FROM tag_group WHERE name = 'Skin'), 'Light', 'Artwork depicts characters with light beige skin tone'),
@@ -144,6 +176,10 @@ BEGIN
     ((SELECT group_id FROM tag_group WHERE name = 'Skin'), 'Scarred', 'Characters with scars'),
     ((SELECT group_id FROM tag_group WHERE name = 'Skin'), 'Burned', 'Characters with burn marks'),
     ((SELECT group_id FROM tag_group WHERE name = 'Skin'), 'Vitiligo', 'Characters with vitiligo'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Skin'), 'Tattooed', 'Characters with tattoos'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Skin'), 'Pierced', 'Characters with skin piercings'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Skin'), 'Painted', 'Characters with painted skin or makeup'),
+
 
     -- Clothes
     ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Robe', 'Characters wearing robes'),
@@ -152,7 +188,7 @@ BEGIN
     ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Leather', 'Characters wearing leather clothing'),
     ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Scarf', 'Characters wearing scarves'),
     ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Blindfold', 'Characters wearing blindfolds'),
-    ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Fur clothing', 'Characters wearing fur clothing'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Fur', 'Characters wearing fur clothing'),
     ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Finery', 'Characters wearing ornate clothing'),
     ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Skirt', 'Characters wearing skirts'),
     ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Eyepatch', 'Characters wearing eyepatches'),
@@ -160,6 +196,10 @@ BEGIN
     ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Glove', 'Characters wearing gloves'),
     ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Dress', 'Characters wearing dresses'),
     ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Suit', 'Characters wearing suits'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Glasses', 'Characters wearing glasses'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Cloak', 'Characters wearing cloaks'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Necklace', 'Characters wearing necklaces'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Clothes'), 'Belt', 'Characters wearing belts'),
 
     -- Armor
     ((SELECT group_id FROM tag_group WHERE name = 'Armor'), 'Plate', 'Heavy plate armor'),
@@ -184,6 +224,14 @@ BEGIN
     ((SELECT group_id FROM tag_group WHERE name = 'Action'), 'Swimming', 'Characters swimming or diving'),
     ((SELECT group_id FROM tag_group WHERE name = 'Action'), 'Flying', 'Characters flying or soaring'),
     ((SELECT group_id FROM tag_group WHERE name = 'Action'), 'Climbing', 'Characters climbing or scaling'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Action'), 'Speaking', 'Characters speaking or orating'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Action'), 'Playing Music', 'Characters playing musical instruments'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Action'), 'Sailing', 'Characters on boats or ships, or characters performing tasks related to sailing'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Action'), 'Fishing', 'Characters fishing or catching fish'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Action'), 'Cooking', 'Characters cooking or preparing food'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Action'), 'Eating', 'Characters eating or drinking'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Action'), 'Sleeping', 'Characters sleeping or resting'),
+    ((SELECT group_id FROM tag_group WHERE name = 'Action'), 'Praying', 'Characters praying or worshipping'),
     
     -- Weapon
     ((SELECT group_id FROM tag_group WHERE name = 'Weapon'), 'Sword', 'Characters holding or wielding swords'),

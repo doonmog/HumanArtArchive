@@ -96,18 +96,21 @@ module.exports = (pool) => {
           t.name,
           t.description,
           tg.name as group_name,
-          c.name as category_name
+          c.name as category_name,
+          CONCAT(tg.name, '-', t.name) as full_tag_name
         FROM tag t
         JOIN tag_group tg ON t.group_id = tg.group_id
         JOIN category c ON tg.category_id = c.category_id
         WHERE LOWER(t.name) = LOWER($1)
+        ORDER BY tg.name, t.name
       `, [name]);
       
       if (result.rows.length === 0) {
         return res.status(404).json({ message: 'Tag not found' });
       }
       
-      res.json({ tag: result.rows[0] });
+      // Return all matching tags instead of just the first one
+      res.json({ tags: result.rows });
       
     } catch (error) {
       console.error('Error fetching tag by name:', error);
