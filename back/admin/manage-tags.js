@@ -161,7 +161,7 @@ module.exports = (pool) => {
     }
   });
 
-  // Update tag description
+  // Update tag name and description
   router.put('/manage-tags/update-tag/:tagId', verifyAdminToken, async (req, res) => {
     const client = await pool.connect();
     
@@ -169,7 +169,7 @@ module.exports = (pool) => {
       await client.query('BEGIN');
       
       const { tagId } = req.params;
-      const { description } = req.body;
+      const { name, description } = req.body;
       
       if (!tagId) {
         return res.status(400).json({ message: 'Tag ID is required' });
@@ -177,7 +177,7 @@ module.exports = (pool) => {
       
       // Verify tag exists
       const tagResult = await client.query(
-        'SELECT tag_id FROM tag WHERE tag_id = $1',
+        'SELECT tag_id, group_id FROM tag WHERE tag_id = $1',
         [tagId]
       );
       
@@ -185,23 +185,56 @@ module.exports = (pool) => {
         return res.status(404).json({ message: 'Tag not found' });
       }
       
-      // Update tag description
-      await client.query(
-        'UPDATE tag SET description = $1 WHERE tag_id = $2',
-        [description?.trim() || null, tagId]
-      );
+      const groupId = tagResult.rows[0].group_id;
+      
+      // If name is being updated, check for duplicates in the same group
+      if (name) {
+        const duplicateCheck = await client.query(
+          'SELECT tag_id FROM tag WHERE name = $1 AND group_id = $2 AND tag_id != $3',
+          [name.trim(), groupId, tagId]
+        );
+        
+        if (duplicateCheck.rows.length > 0) {
+          return res.status(409).json({ message: 'Another tag with this name already exists in the group' });
+        }
+      }
+      
+      // Update tag name and/or description
+      let updateQuery = 'UPDATE tag SET ';
+      const updateValues = [];
+      const updateFields = [];
+      
+      if (name !== undefined) {
+        updateFields.push('name = $' + (updateValues.length + 1));
+        updateValues.push(name.trim());
+      }
+      
+      if (description !== undefined) {
+        updateFields.push('description = $' + (updateValues.length + 1));
+        updateValues.push(description?.trim() || null);
+      }
+      
+      if (updateFields.length === 0) {
+        return res.status(400).json({ message: 'No fields to update' });
+      }
+      
+      updateQuery += updateFields.join(', ');
+      updateQuery += ' WHERE tag_id = $' + (updateValues.length + 1);
+      updateValues.push(tagId);
+      
+      await client.query(updateQuery, updateValues);
       
       await client.query('COMMIT');
       
       res.json({
-        message: 'Tag description updated successfully',
+        message: 'Tag updated successfully',
         tagId
       });
       
     } catch (error) {
       await client.query('ROLLBACK');
       console.error('Tag update error:', error);
-      res.status(500).json({ message: 'Failed to update tag description' });
+      res.status(500).json({ message: 'Failed to update tag' });
     } finally {
       client.release();
     }

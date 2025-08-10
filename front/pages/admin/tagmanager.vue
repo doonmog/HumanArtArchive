@@ -124,17 +124,29 @@
                   <div class="mt-2">
                     <div v-for="tag in group.tags" :key="tag.tagId" class="ml-4 mb-2 flex items-start justify-between">
                       <div>
-                        <span class="text-md text-gray-700">{{ tag.name }}</span>
+                        <span v-if="editingTagId !== tag.tagId" class="text-md text-gray-700">{{ tag.name }}</span>
                         <div v-if="editingTagId !== tag.tagId" class="text-sm text-gray-500">
                           {{ tag.description || 'No description' }}
                         </div>
                         <div v-else class="mt-2">
-                          <input 
-                            type="text" 
-                            v-model="editingTagDescription" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
-                            placeholder="Enter description"
-                          />
+                          <div class="mb-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tag Name</label>
+                            <input 
+                              type="text" 
+                              v-model="editingTagName" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+                              placeholder="Enter tag name"
+                            />
+                          </div>
+                          <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <input 
+                              type="text" 
+                              v-model="editingTagDescription" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+                              placeholder="Enter description"
+                            />
+                          </div>
                           <div class="mt-2 flex space-x-2">
                             <button @click="saveTagDescription(tag.tagId)" class="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700">
                               Save
@@ -150,7 +162,7 @@
                         @click="startEditingTag(tag)" 
                         class="text-blue-600 hover:text-blue-800 text-sm"
                       >
-                        Edit Description
+                        Edit Tag
                       </button>
                     </div>
                   </div>
@@ -194,6 +206,7 @@ const editingGroupId = ref(null)
 const editingGroupDescription = ref('')
 const editingTagId = ref(null)
 const editingTagDescription = ref('')
+const editingTagName = ref('')
 
 // Fetch all tags on mount
 onMounted(async () => {
@@ -340,19 +353,21 @@ async function saveGroupDescription(groupId) {
   }
 }
 
-// Start editing a tag description
+// Start editing a tag
 function startEditingTag(tag) {
   editingTagId.value = tag.tagId
   editingTagDescription.value = tag.description || ''
+  editingTagName.value = tag.name || ''
 }
 
 // Cancel editing tag
 function cancelEditingTag() {
   editingTagId.value = null
   editingTagDescription.value = ''
+  editingTagName.value = ''
 }
 
-// Save tag description
+// Save tag changes
 async function saveTagDescription(tagId) {
   try {
     const token = useCookie('admin-token')
@@ -362,6 +377,7 @@ async function saveTagDescription(tagId) {
         'Authorization': `Bearer ${token.value}`
       },
       body: {
+        name: editingTagName.value,
         description: editingTagDescription.value
       }
     })
@@ -371,6 +387,7 @@ async function saveTagDescription(tagId) {
       for (const group of category.groups) {
         const tag = group.tags.find(t => t.tagId === tagId)
         if (tag) {
+          tag.name = editingTagName.value
           tag.description = editingTagDescription.value
           break
         }
