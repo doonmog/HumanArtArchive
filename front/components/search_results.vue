@@ -115,7 +115,8 @@
       </button>
     </div>
 
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+    <!-- Exact Matches Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
       <div
         v-for="artwork in artworks"
         :key="`${artwork.artwork_id}-${artwork.image_id || 'no-image'}`"
@@ -165,6 +166,69 @@
           </div>
         </div>
         </NuxtLink>
+      </div>
+    </div>
+
+    <!-- Partial Matches Section -->
+    <div v-if="hasPartialMatches" class="mt-12 mb-8">
+      <div class="flex items-center space-x-4">
+        <hr class="flex-grow border-t border-gray-300" />
+        <h2 class="text-xl font-semibold text-gray-700">Partial Matches (Matches most but not all searched tags)</h2>
+        <hr class="flex-grow border-t border-gray-300" />
+      </div>
+      
+      <!-- Partial Matches Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6">
+        <div
+          v-for="artwork in partialMatchesArtworks"
+          :key="`${artwork.artwork_id}-${artwork.image_id || 'no-image'}-partial`"
+          class="artwork-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden relative group"
+          :class="{ 'ring-2 ring-blue-500': isAdmin && selectedImages.has(artwork.image_id) }"
+        >
+          <!-- Selection checkbox for admin -->
+          <div v-if="isAdmin" class="absolute top-3 left-3 z-10">
+            <input
+              type="checkbox"
+              :checked="selectedImages.has(artwork.image_id)"
+              @change="toggleSelection(artwork)"
+              class="h-8 w-8 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+            />
+          </div>
+
+          <NuxtLink
+            :to="getArtworkLink(artwork)"
+            @click.prevent="confirmArtworkNavigation($event, getArtworkLink(artwork))"
+            class="block cursor-pointer hover:scale-105 transition-transform duration-200"
+          >
+          <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
+            <nuxt-img
+              v-if="artwork.has_image && artwork.image_id"
+              :src="`/api/image-by-id/${artwork.image_id}`"
+              :alt="artwork.title"
+              provider="backend"
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center">
+              <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            
+            <div class="artwork-info absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
+              <h3 class="font-semibold text-white text-sm mb-1 line-clamp-2">
+                {{ artwork.title }}
+              </h3>
+              <p v-if="artwork.artist" class="text-gray-200 text-xs mb-1">
+                {{ artwork.artist }}
+              </p>
+              <p v-if="artwork.year" class="text-gray-300 text-xs">
+                {{ artwork.year }}
+              </p>
+            </div>
+          </div>
+          </NuxtLink>
+        </div>
       </div>
     </div>
 
@@ -393,7 +457,31 @@ const refresh = () => {
   fetchResults(props.query, 1)
 }
 
-const artworks = computed(() => searchResults.value?.artworks || [])
+// Separate exact matches from partial matches
+const artworks = computed(() => {
+  const allArtworks = searchResults.value?.artworks || []
+  
+  // If no artworks or no match_score property, return all artworks as is
+  if (allArtworks.length === 0 || allArtworks[0].match_score === undefined) {
+    return allArtworks
+  }
+  
+  // Get the highest match score (exact matches)
+  const maxScore = Math.max(...allArtworks.map(a => a.match_score))
+  
+  // Separate exact and partial matches
+  const exactMatches = allArtworks.filter(a => a.match_score === maxScore)
+  const partialMatches = allArtworks.filter(a => a.match_score < maxScore)
+  
+  // Store the partial matches separately for display purposes
+  partialMatchesArtworks.value = partialMatches
+  
+  // Return exact matches first
+  return exactMatches
+})
+
+const partialMatchesArtworks = ref([])
+const hasPartialMatches = computed(() => partialMatchesArtworks.value.length > 0)
 const pagination = computed(() => searchResults.value?.pagination || null)
 
 const getArtworkLink = (artwork) => {

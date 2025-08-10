@@ -4,15 +4,29 @@
     <div class="container mx-auto px-4 py-8">
       <h1 class="text-3xl font-bold mb-6">Advanced Search</h1>
 
-      <!-- Alternate Versions Checkbox -->
-      <div class="flex items-center mb-6">
-        <input 
-          id="alternate-versions"
-          type="checkbox" 
-          v-model="showAlternateVersions"
-          class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
-        >
-        <label for="alternate-versions" class="ml-2 text-gray-700">Show alternate versions of artwork</label>
+      <!-- Search Options -->
+      <div class="flex flex-col space-y-3 mb-6">
+        <!-- Alternate Versions Checkbox -->
+        <div class="flex items-center">
+          <input 
+            id="alternate-versions"
+            type="checkbox" 
+            v-model="showAlternateVersions"
+            class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+          >
+          <label for="alternate-versions" class="ml-2 text-gray-700">Show alternate versions of artwork</label>
+        </div>
+        
+        <!-- Partial Match Checkbox -->
+        <div class="flex items-center">
+          <input 
+            id="partial-match"
+            type="checkbox" 
+            v-model="usePartialMatch"
+            class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+          >
+          <label for="partial-match" class="ml-2 text-gray-700">Use partial tag matching (show artworks that match most tags)</label>
+        </div>
       </div>
       
       <div v-if="loading" class="flex justify-center py-12">
@@ -92,6 +106,7 @@ const selectedTags = ref([])
 const openGroups = ref([])
 const loading = ref(true)
 const showAlternateVersions = ref(false)
+const usePartialMatch = ref(true)
 
 // Fetch only categories, tag groups, and tags that are associated with at least one artwork
 onMounted(async () => {
@@ -191,13 +206,27 @@ const handleSearch = async () => {
   // Build search query string with properly formatted tags
   const tagQuery = selectedTagNames.join(' ')
   let finalQuery = tagQuery
-
+  
+  // Add search options
+  const searchOptions = []
+  
+  // Add version filter if needed
   if (!showAlternateVersions.value) {
-    const versionQuery = 'version:primary'
+    searchOptions.push('version:primary')
+  }
+  
+  // Add partial match option if enabled
+  if (usePartialMatch.value) {
+    searchOptions.push('match:partial')
+  }
+  
+  // Combine search options with tag query
+  if (searchOptions.length > 0) {
+    const optionsQuery = searchOptions.join(' ')
     if (finalQuery) {
-      finalQuery = `${versionQuery} ${finalQuery}`
+      finalQuery = `${optionsQuery} ${finalQuery}`
     } else {
-      finalQuery = versionQuery
+      finalQuery = optionsQuery
     }
   }
 

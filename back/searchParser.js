@@ -4,6 +4,8 @@ class SearchParser {
     this.position = 0;
     this.parameters = [];
     this.hasVersionFilter = false;
+    this.partialMatch = false;
+    this.tagQueries = [];
   }
 
   tokenize(query) {
@@ -86,12 +88,16 @@ class SearchParser {
     this.position = 0;
     this.parameters = [];
     this.hasVersionFilter = false;
+    this.partialMatch = false;
+    this.tagQueries = [];
     
     const ast = this.parseExpression();
     return {
       whereClause: this.generateSQL(ast),
       parameters: this.parameters,
-      hasVersionFilter: this.hasVersionFilter
+      hasVersionFilter: this.hasVersionFilter,
+      partialMatch: this.partialMatch,
+      tagQueries: this.tagQueries
     };
   }
 
@@ -181,6 +187,10 @@ class SearchParser {
         const tagValue = tagToken.type === 'QUOTED_STRING' ? 
           tagToken.value : tagToken.value.toLowerCase();
         
+        // Store tag queries for partial matching
+        const fullTag = `${groupValue}-${tagValue}`;
+        this.tagQueries.push(fullTag);
+        
         return {
           type: 'GROUP_TAG_QUERY',
           groupName: groupValue,
@@ -196,69 +206,81 @@ class SearchParser {
   }
 
   parseFieldQuery() {
-    const fieldToken = this.tokens[this.position];
+    const fieldName = this.tokens[this.position].value;
     this.position++;
     
     if (this.position >= this.tokens.length || this.tokens[this.position].type !== 'COLON') {
-      throw new Error('Expected colon after field name');
+      throw new Error(`Expected colon after field name ${fieldName}`);
     }
     this.position++;
-    
-    const valueToken = this.tokens[this.position];
-    if (!valueToken) {
-      throw new Error('Expected value after colon');
-    }
     
     let operator = 'EQ';
-    let value = valueToken.value;
-    
-    if (valueToken.type === 'GT' || valueToken.type === 'LT' || 
-        valueToken.type === 'GTE' || valueToken.type === 'LTE' || 
-        valueToken.type === 'EQ') {
-      operator = valueToken.type;
-      this.position++;
-      
-      const nextToken = this.tokens[this.position];
-      if (!nextToken) {
-        throw new Error('Expected value after operator');
+    if (this.position < this.tokens.length) {
+      const token = this.tokens[this.position];
+      if (token.type === 'GT' || token.type === 'LT' || 
+          token.type === 'GTE' || token.type === 'LTE' || 
+          token.type === 'EQ') {
+        operator = token.type;
+        this.position++;
       }
-      value = nextToken.value;
+    }
+    
+    if (this.position >= this.tokens.length) {
+      throw new Error(`Expected value after operator for field ${fieldName}`);
+    }
+    
+    let value;
+    const token = this.tokens[this.position];
+    
+    if (token.type === 'QUOTED_STRING') {
+      value = token.value;
+    } else if (token.type === 'IDENTIFIER') {
+      value = token.value;
+    } else {
+      throw new Error(`Expected string or identifier after operator for field ${fieldName}`);
     }
     
     this.position++;
+    
+    // Check for match:partial parameter
+    if (fieldName.toLowerCase() === 'match' && value.toLowerCase() === 'partial') {
+      this.partialMatch = true;
+      return {
+        type: 'MATCH_PARTIAL',
+        value: true
+      };
+    }
     
     return {
       type: 'FIELD_QUERY',
-      field: fieldToken.value.toLowerCase(),
+      field: fieldName,
       operator,
       value
     };
   }
 
   parseTagQuery() {
-    const token = this.tokens[this.position];
+    const tagValue = this.tokens[this.position].value;
     this.position++;
+    
+    // Store tag queries for partial matching
+    this.tagQueries.push(tagValue.toLowerCase());
     
     return {
       type: 'TAG_QUERY',
-      value: token.value.toLowerCase()
+      value: tagValue.toLowerCase()
     };
   }
 
   generateSQL(ast) {
-    if (!ast) {
-      return '1=1';
-    }
+    if (!ast) return '1=1';
     
     switch (ast.type) {
       case 'BINARY_OP':
-        const left = this.generateSQL(ast.left);
-        const right = this.generateSQL(ast.right);
-        return `(${left} ${ast.operator} ${right})`;
+        return `(${this.generateSQL(ast.left)}) ${ast.operator} (${this.generateSQL(ast.right)})`;
         
       case 'UNARY_OP':
-        const operand = this.generateSQL(ast.operand);
-        return `NOT (${operand})`;
+        return `NOT (${this.generateSQL(ast.operand)})`;
         
       case 'TAG_QUERY':
         return this.generateTagSQL(ast.value);
@@ -268,6 +290,10 @@ class SearchParser {
         
       case 'FIELD_QUERY':
         return this.generateFieldSQL(ast.field, ast.operator, ast.value);
+        
+      case 'MATCH_PARTIAL':
+        // This is handled separately, just return true
+        return '1=1';
         
       default:
         throw new Error(`Unknown AST node type: ${ast.type}`);
@@ -410,7 +436,9 @@ function parseSearchQuery(query) {
     return {
       whereClause: '1=1',
       parameters: [],
-      hasVersionFilter: false
+      hasVersionFilter: false,
+      partialMatch: false,
+      tagQueries: []
     };
   }
   
