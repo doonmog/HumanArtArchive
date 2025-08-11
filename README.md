@@ -16,8 +16,8 @@ POSTGRES_PASSWORD=your-safe-password
 
 ## Running the app
 ```bash
-docker-compose up --build
-cd back && node auth/seed-admin.js #(First time only)
+docker compose -f docker-compose.prod.yml up --build 
+docker exec -it back node auth/seed-admin.js #(First time only, creates admin account)
 
-docker-compose down
+docker compose -f docker-compose.prod.yml down
 ```

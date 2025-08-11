@@ -1,15 +1,18 @@
 <template>
   <div class="relative">
     <div class="mb-8">
-      <h1 v-if="tagInfo" class="text-4xl font-bold text-black mb-2">
-        {{ tagInfo.name }}
+      <h1 v-if="tagInfoList && tagInfoList.length > 0" class="text-4xl font-bold text-black mb-2">
+        {{ tagInfoList[0].name }}
       </h1>
       <h1 v-else class="text-3xl font-bold text-black mb-2">
         Search Results
       </h1>
-      <p v-if="tagInfo && tagInfo.description" class="text-lg text-black mb-4">
-        {{ tagInfo.description }}
-      </p>
+      <div v-if="tagInfoList && tagInfoList.length > 0" class="space-y-4">
+        <div v-for="(tag, index) in tagInfoList" :key="tag.tag_id" class="text-lg text-black">
+          <div v-if="tagInfoList.length > 1" class="font-medium">{{ tag.full_tag_name }}:</div>
+          <p>{{ tag.description }}</p>
+        </div>
+      </div>
       <p v-if="query" class="text-gray-600">
         Showing results for: <span class="font-medium">"{{ query }}"</span>
       </p>
@@ -46,6 +49,30 @@
           >
             Edit Selected
           </button>
+        </div>
+      </div>
+      <div class="mt-4 flex flex-wrap items-center gap-4">
+        <label class="flex items-center">
+          <input
+            type="checkbox"
+            v-model="selectEntireArtwork"
+            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <span class="ml-2 text-sm font-medium text-gray-700">
+            Select each image of artwork
+          </span>
+        </label>
+        
+        <div class="flex items-center">
+          <label for="items-per-page" class="mr-2 text-sm font-medium text-gray-700">Items per page:</label>
+          <select
+            id="items-per-page"
+            v-model="itemsPerPage"
+            @change="onPageSizeChange"
+            class="bg-white border border-gray-300 text-gray-700 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block p-2"
+          >
+            <option v-for="size in availablePageSizes" :key="size" :value="size">{{ size }}</option>
+          </select>
         </div>
       </div>
     </div>
@@ -88,55 +115,128 @@
       </button>
     </div>
 
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-      <div
-        v-for="artwork in artworks"
-        :key="`${artwork.artwork_id}-${artwork.image_id || 'no-image'}`"
-        class="artwork-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden relative group"
-        :class="{ 'ring-2 ring-blue-500': isAdmin && selectedImages.has(artwork.image_id) }"
-      >
-        <!-- Selection checkbox for admin -->
-        <div v-if="isAdmin" class="absolute top-2 left-2 z-10">
-          <input
-            type="checkbox"
-            :checked="artwork.image_id ? selectedImages.has(artwork.image_id) : selectedArtworks.has(artwork.artwork_id)"
-            @change="toggleSelection(artwork)"
-            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-          />
-        </div>
-
-        <NuxtLink
-          :to="getArtworkLink(artwork)"
-          class="block cursor-pointer hover:scale-105 transition-transform duration-200"
+    <!-- Exact Matches Section -->
+    <div v-if="artworks.length > 0" class="mb-8">
+      <div class="flex items-center space-x-4 mb-6">
+        <hr class="flex-grow border-t border-gray-300" />
+        <h2 class="text-xl font-semibold text-gray-700">{{ isExactMatch ? 'Exactly matched your search' : 'Best matches for your search' }}</h2>
+        <hr class="flex-grow border-t border-gray-300" />
+      </div>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div
+          v-for="artwork in artworks"
+          :key="`${artwork.artwork_id}-${artwork.image_id || 'no-image'}`"
+          class="artwork-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden relative group"
+          :class="{ 'ring-2 ring-blue-500': isAdmin && selectedImages.has(artwork.image_id) }"
         >
-        <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
-          <nuxt-img
-            v-if="artwork.has_image && artwork.image_id"
-            :src="`/api/image-by-id/${artwork.image_id}`"
-            :alt="artwork.title"
-            provider="backend"
-            class="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div v-else class="w-full h-full flex items-center justify-center">
-            <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+          <!-- Selection checkbox for admin -->
+          <div v-if="isAdmin" class="absolute top-3 left-3 z-10">
+            <input
+              type="checkbox"
+              :checked="selectedImages.has(artwork.image_id)"
+              @change="toggleSelection(artwork)"
+              class="h-8 w-8 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+            />
           </div>
-          
-          <div class="artwork-info absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
-            <h3 class="font-semibold text-white text-sm mb-1 line-clamp-2">
-              {{ artwork.title }}
-            </h3>
-            <p v-if="artwork.artist" class="text-gray-200 text-xs mb-1">
-              {{ artwork.artist }}
-            </p>
-            <p v-if="artwork.year" class="text-gray-300 text-xs">
-              {{ artwork.year }}
-            </p>
-          </div>
+
+          <NuxtLink
+            :to="getArtworkLink(artwork)"
+            @click.prevent="confirmArtworkNavigation($event, getArtworkLink(artwork))"
+            class="block cursor-pointer hover:scale-105 transition-transform duration-200"
+          >
+            <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
+              <nuxt-img
+                v-if="artwork.has_image && artwork.image_id"
+                :src="`/api/image-by-id/${artwork.image_id}`"
+                :alt="artwork.title"
+                provider="backend"
+                class="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div v-else class="w-full h-full flex items-center justify-center">
+                <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              
+              <div class="artwork-info absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
+                <h3 class="font-semibold text-white text-sm mb-1 line-clamp-2">
+                  {{ artwork.title }}
+                </h3>
+                <p v-if="artwork.artist" class="text-gray-200 text-xs mb-1">
+                  {{ artwork.artist }}
+                </p>
+                <p v-if="artwork.year" class="text-gray-300 text-xs">
+                  {{ artwork.year }}
+                </p>
+              </div>
+            </div>
+          </NuxtLink>
         </div>
-        </NuxtLink>
+      </div>
+    </div>
+
+    <!-- Partial Matches Section -->
+    <div v-if="hasPartialMatches" class="mt-12 mb-8">
+      <div class="flex items-center space-x-4">
+        <hr class="flex-grow border-t border-gray-300" />
+        <h2 class="text-xl font-semibold text-gray-700">Partial Matches (Matches some but not all searched tags, showing closest matches first)</h2>
+        <hr class="flex-grow border-t border-gray-300" />
+      </div>
+      
+      <!-- Partial Matches Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6">
+        <div
+          v-for="artwork in partialMatchesArtworks"
+          :key="`${artwork.artwork_id}-${artwork.image_id || 'no-image'}-partial`"
+          class="artwork-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden relative group"
+          :class="{ 'ring-2 ring-blue-500': isAdmin && selectedImages.has(artwork.image_id) }"
+        >
+          <!-- Selection checkbox for admin -->
+          <div v-if="isAdmin" class="absolute top-3 left-3 z-10">
+            <input
+              type="checkbox"
+              :checked="selectedImages.has(artwork.image_id)"
+              @change="toggleSelection(artwork)"
+              class="h-8 w-8 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+            />
+          </div>
+
+          <NuxtLink
+            :to="getArtworkLink(artwork)"
+            @click.prevent="confirmArtworkNavigation($event, getArtworkLink(artwork))"
+            class="block cursor-pointer hover:scale-105 transition-transform duration-200"
+          >
+            <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
+              <nuxt-img
+                v-if="artwork.has_image && artwork.image_id"
+                :src="`/api/image-by-id/${artwork.image_id}`"
+                :alt="artwork.title"
+                provider="backend"
+                class="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div v-else class="w-full h-full flex items-center justify-center">
+                <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              
+              <div class="artwork-info absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
+                <h3 class="font-semibold text-white text-sm mb-1 line-clamp-2">
+                  {{ artwork.title }}
+                </h3>
+                <p v-if="artwork.artist" class="text-gray-200 text-xs mb-1">
+                  {{ artwork.artist }}
+                </p>
+                <p v-if="artwork.year" class="text-gray-300 text-xs">
+                  {{ artwork.year }}
+                </p>
+              </div>
+            </div>
+          </NuxtLink>
+        </div>
       </div>
     </div>
 
@@ -249,6 +349,8 @@
 </template>
 
 <script setup>
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import BulkAddTags from './bulk_add_tags.vue'
 
 const props = defineProps({
@@ -269,38 +371,85 @@ const props = defineProps({
 // Multi-select state for admin
 const selectedArtworks = ref(new Set())
 const selectedImages = ref(new Set())
+const selectEntireArtwork = ref(false)
 const showEditSidebar = ref(false)
 
 const searchResults = ref(null)
 const pending = ref(false)
 const error = ref(null)
-const tagInfo = ref(null)
+const tagInfoList = ref([])
 const currentPage = ref(1)
-const itemsPerPage = 60
+const itemsPerPage = ref(60)
+const availablePageSizes = [60, 120, 180, 240]
 
 const fetchResults = async (searchQuery, page = 1) => {
   try {
     pending.value = true
     error.value = null
-    tagInfo.value = null
+    tagInfoList.value = []
     
     const response = await $fetch('/api/art', {
       query: { 
         q: searchQuery,
         page: page,
-        limit: itemsPerPage
+        limit: itemsPerPage.value
       }
     })
     searchResults.value = response
     currentPage.value = page
     
-    // Check if this is a single tag search
-    if (searchQuery && !searchQuery.includes(' ') && !searchQuery.includes(':') && !searchQuery.includes('-')) {
+    // Check if this is a tag search that should show a description
+    const extractTagForDescription = (q) => {
+      if (!q) return null;
+      
+      // Clean the query by removing quotes
+      const cleanQuery = q.trim().replace(/^"(.*)"$/, '$1').trim();
+      
+      // Case 1: Simple tag like "black"
+      if (!/[:()]/g.test(cleanQuery) && !/\b(AND|OR)\b/i.test(cleanQuery)) {
+        return cleanQuery;
+      }
+      
+      // Case 2: Compound tag like "hair-black"
+      if (/^[a-zA-Z]+-[a-zA-Z]+$/.test(cleanQuery)) {
+        // For compound tags like "hair-black", extract the second part ("black")
+        const parts = cleanQuery.split('-');
+        if (parts.length === 2) {
+          return parts[1];
+        }
+      }
+      
+      // Case 3: Query with only "version:primary" and a tag
+      const versionPrimaryRegex = /^version:primary\s+([a-zA-Z-]+)$|^([a-zA-Z-]+)\s+version:primary$/i;
+      const versionMatch = cleanQuery.match(versionPrimaryRegex);
+      if (versionMatch) {
+        // Return the tag part (either group 1 or 2 will have the tag)
+        const tag = versionMatch[1] || versionMatch[2];
+        
+        // If it's a compound tag, extract the second part
+        if (tag && tag.includes('-')) {
+          const parts = tag.split('-');
+          if (parts.length === 2) {
+            return parts[1];
+          }
+        }
+        
+        return tag;
+      }
+      
+      return null;
+    };
+
+    const tagForDescription = extractTagForDescription(searchQuery);
+    if (tagForDescription) {
       try {
-        const tagResponse = await $fetch(`/api/tag-by-name/${encodeURIComponent(searchQuery)}`)
-        tagInfo.value = tagResponse.tag
+        const tagResponse = await $fetch(`/api/tag-by-name/${encodeURIComponent(tagForDescription)}`)
+        // The API now returns an array of tags instead of a single tag
+        if (tagResponse.tags && tagResponse.tags.length > 0) {
+          tagInfoList.value = tagResponse.tags
+        }
       } catch (tagErr) {
-        console.error('Error fetching tag info:', tagErr)
+        // This is expected if the tag doesn't exist, so we don't need to log it.
       }
     }
   } catch (err) {
@@ -316,8 +465,76 @@ const refresh = () => {
   fetchResults(props.query, 1)
 }
 
-const artworks = computed(() => searchResults.value?.artworks || [])
+// Separate exact matches from partial matches
+const artworks = computed(() => {
+  const allArtworks = searchResults.value?.artworks || []
+  
+  // If no artworks, return empty array
+  if (allArtworks.length === 0) {
+    wasMovedFromPartialMatches.value = false
+    return []
+  }
+  
+  // If no match_score property, return all artworks as is
+  if (allArtworks[0].match_score === undefined) {
+    wasMovedFromPartialMatches.value = false
+    return allArtworks
+  }
+  
+  // Get the highest match score (exact matches)
+  const maxScore = Math.max(...allArtworks.map(a => a.match_score))
+  
+  // Separate exact and partial matches
+  const exactMatches = allArtworks.filter(a => a.match_score === maxScore)
+  const partialMatches = allArtworks.filter(a => a.match_score < maxScore)
+  
+  // Store the partial matches separately for display purposes
+  partialMatchesArtworks.value = partialMatches
+  
+  // If there are only partial matches (no exact matches), move them to exact matches section
+  if (exactMatches.length === 0 && partialMatches.length > 0) {
+    // Get the highest score among partial matches
+    const highestPartialScore = Math.max(...partialMatches.map(a => a.match_score))
+    
+    // Move the highest scoring partial matches to exact matches
+    const highestPartialMatches = partialMatches.filter(a => a.match_score === highestPartialScore)
+    const remainingPartialMatches = partialMatches.filter(a => a.match_score < highestPartialScore)
+    
+    // Update the partial matches array
+    partialMatchesArtworks.value = remainingPartialMatches
+    
+    // Set flag that we're showing partial matches as best results
+    wasMovedFromPartialMatches.value = true
+    
+    // Return the highest scoring partial matches as "exact" matches
+    return highestPartialMatches
+  }
+  
+  // We have true exact matches
+  wasMovedFromPartialMatches.value = false
+  
+  // Return exact matches
+  return exactMatches
+})
+
+const partialMatchesArtworks = ref([])
+const wasMovedFromPartialMatches = ref(false)
+const hasPartialMatches = computed(() => partialMatchesArtworks.value.length > 0)
 const pagination = computed(() => searchResults.value?.pagination || null)
+
+// Determine if we have true exact matches or just showing best partial matches
+const isExactMatch = computed(() => {
+  const allArtworks = searchResults.value?.artworks || []
+  
+  // If no match_score property, assume they're all exact matches
+  if (allArtworks.length === 0 || allArtworks[0].match_score === undefined) {
+    return true
+  }
+  
+  // If we're showing results from the artworks.value computed property,
+  // check if they were originally exact matches or just the best partial matches
+  return artworks.value.length > 0 && artworks.value[0].match_score === Math.max(...allArtworks.map(a => a.match_score)) && !wasMovedFromPartialMatches
+})
 
 const getArtworkLink = (artwork) => {
   const baseUrl = props.isAdmin ? '/admin/artwork' : '/artwork'
@@ -327,6 +544,16 @@ const getArtworkLink = (artwork) => {
     params.set('image_id', artwork.image_id)
   }
   return `${baseUrl}?${params.toString()}`
+}
+
+const confirmArtworkNavigation = (event, path) => {
+  if (selectedImages.value.size > 0) {
+    if (window.confirm('You have selected artworks. Are you sure you want to leave this page?')) {
+      router.push(path)
+    }
+  } else {
+    router.push(path)
+  }
 }
 
 // Multi-select computed properties
@@ -369,19 +596,40 @@ const toggleSelectAll = () => {
 }
 
 const toggleSelection = (artwork) => {
-  // Toggle image selection
-  if (artwork.image_id) {
-    if (selectedImages.value.has(artwork.image_id)) {
+  if (!artwork || !artwork.image_id) return
+
+  const isSelected = selectedImages.value.has(artwork.image_id)
+
+  if (selectEntireArtwork.value) {
+    // Select/deselect all images for the given artwork_id
+    artworks.value.forEach(item => {
+      if (item.artwork_id === artwork.artwork_id && item.image_id) {
+        if (isSelected) {
+          selectedImages.value.delete(item.image_id)
+        } else {
+          selectedImages.value.add(item.image_id)
+        }
+      }
+    })
+
+    // Update artwork selection
+    if (isSelected) {
+      selectedArtworks.value.delete(artwork.artwork_id)
+    } else {
+      selectedArtworks.value.add(artwork.artwork_id)
+    }
+
+  } else {
+    // Original behavior: toggle single image
+    if (isSelected) {
       selectedImages.value.delete(artwork.image_id)
       
-      // Check if this was the last image from this artwork
+      // Check if this was the last image from this artwork on the current page
       const hasMoreImagesFromArtwork = artworks.value.some(item => 
         item.artwork_id === artwork.artwork_id && 
-        item.image_id !== artwork.image_id && 
         selectedImages.value.has(item.image_id)
       )
       
-      // If no more images from this artwork are selected, remove artwork from selection
       if (!hasMoreImagesFromArtwork) {
         selectedArtworks.value.delete(artwork.artwork_id)
       }
@@ -407,6 +655,22 @@ const onBulkTagsApplied = () => {
   closeEditSidebar()
   // Optionally refresh results to show updated tags
   fetchResults(props.query, currentPage.value)
+}
+
+const onPageSizeChange = () => {
+  // Save the selected page size to localStorage for persistence
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('artArchivePageSize', itemsPerPage.value.toString())
+  }
+  
+  // Reset to page 1 and refetch with new page size
+  currentPage.value = 1
+  fetchResults(props.query, 1)
+  
+  // Update URL to page 1
+  const query = { ...route.query }
+  delete query.page
+  router.push({ query })
 }
 
 const router = useRouter()
@@ -484,6 +748,59 @@ watch(() => props.page, (newPage) => {
     fetchResults(props.query, newPage)
   }
 }, { immediate: true })
+
+// Navigation prevention when artworks are selected
+const beforeUnloadHandler = (event) => {
+  if (selectedImages.value.size > 0) {
+    const message = 'You have selected artworks. Are you sure you want to leave this page?'
+    event.preventDefault()
+    event.returnValue = message
+    return message
+  }
+}
+
+// Add navigation prevention for browser back/forward and page refreshes
+onMounted(() => {
+  window.addEventListener('beforeunload', beforeUnloadHandler)
+  
+  // Load saved page size from localStorage if available
+  if (typeof localStorage !== 'undefined') {
+    const savedPageSize = localStorage.getItem('artArchivePageSize')
+    if (savedPageSize && availablePageSizes.includes(parseInt(savedPageSize))) {
+      itemsPerPage.value = parseInt(savedPageSize)
+    }
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', beforeUnloadHandler)
+})
+
+// Add navigation prevention for internal Nuxt navigation
+const confirmNavigation = (to, from, next) => {
+  if (selectedImages.value.size > 0) {
+    if (window.confirm('You have selected artworks. Are you sure you want to leave this page?')) {
+      next()
+    } else {
+      next(false)
+    }
+  } else {
+    next()
+  }
+}
+
+onMounted(() => {
+  router.beforeEach(confirmNavigation)
+})
+
+onBeforeUnmount(() => {
+  // Remove the navigation guard when component is unmounted
+  const routerInstance = router
+  const guardIndex = routerInstance.beforeHooks.indexOf(confirmNavigation)
+  if (guardIndex >= 0) {
+    routerInstance.beforeHooks.splice(guardIndex, 1)
+  }
+})
 </script>
 
 <style scoped>

@@ -3,6 +3,31 @@
     <Header />
     <div class="container mx-auto px-4 py-8">
       <h1 class="text-3xl font-bold mb-6">Advanced Search</h1>
+
+      <!-- Search Options -->
+      <div class="flex flex-col space-y-3 mb-6">
+        <!-- Alternate Versions Checkbox -->
+        <div class="flex items-center">
+          <input 
+            id="alternate-versions"
+            type="checkbox" 
+            v-model="showAlternateVersions"
+            class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+          >
+          <label for="alternate-versions" class="ml-2 text-gray-700">Show alternate versions of artwork</label>
+        </div>
+        
+        <!-- Partial Match Checkbox -->
+        <div class="flex items-center">
+          <input 
+            id="partial-match"
+            type="checkbox" 
+            v-model="usePartialMatch"
+            class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+          >
+          <label for="partial-match" class="ml-2 text-gray-700">Use partial tag matching (show artworks that match most tags)</label>
+        </div>
+      </div>
       
       <div v-if="loading" class="flex justify-center py-12">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
@@ -61,7 +86,7 @@
           <button 
             @click="handleSearch" 
             class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-            :disabled="selectedTags.length === 0"
+            :disabled="selectedTags.length === 0 && showAlternateVersions"
           >
             Search with Selected Tags
           </button>
@@ -80,13 +105,15 @@ const categories = ref([])
 const selectedTags = ref([])
 const openGroups = ref([])
 const loading = ref(true)
+const showAlternateVersions = ref(false)
+const usePartialMatch = ref(true)
 
-// Fetch all categories, tag groups, and tags
+// Fetch only categories, tag groups, and tags that are associated with at least one artwork
 onMounted(async () => {
   try {
-    const response = await fetch('/api/tags')
+    const response = await fetch('/api/used-tags')
     if (!response.ok) {
-      throw new Error('Failed to fetch tags')
+      throw new Error('Failed to fetch used tags')
     }
     const data = await response.json()
     categories.value = data.categories || []
@@ -94,7 +121,7 @@ onMounted(async () => {
     // All tag groups are closed by default
     // No need to push any group IDs to openGroups
   } catch (error) {
-    console.error('Error fetching tags:', error)
+    console.error('Error fetching used tags:', error)
   } finally {
     loading.value = false
   }
@@ -138,29 +165,71 @@ const deselectAllInGroup = (group) => {
 
 // Handle search with selected tags
 const handleSearch = async () => {
-  if (selectedTags.value.length === 0) return
-  
-  // Get tag names for selected tag IDs
+  if (selectedTags.value.length === 0 && showAlternateVersions.value) {
+    // If nothing is selected and we are not filtering for primary, do nothing.
+    return
+  }
+
+  // Get tag names for selected tag IDs with their group names
   const selectedTagNames = []
   categories.value.forEach(category => {
     category.groups.forEach(group => {
       group.tags.forEach(tag => {
         if (selectedTags.value.includes(tag.tagId)) {
-          // Add tag name to the list, properly formatted for search
+          // Add tag name to the list with group name, properly formatted for search
           const tagName = tag.name
-          // If tag contains spaces, wrap it in quotes
-          if (tagName.includes(' ')) {
-            selectedTagNames.push(`"${tagName}"`)
+          const groupName = group.name
+          
+          // Format as groupName-tagName
+          let formattedTag = ''
+          
+          // If group name contains spaces, wrap it in quotes
+          if (groupName.includes(' ')) {
+            formattedTag = `"${groupName}"-`
           } else {
-            selectedTagNames.push(tagName)
+            formattedTag = `${groupName}-`
           }
+          
+          // If tag name contains spaces, wrap it in quotes
+          if (tagName.includes(' ')) {
+            formattedTag += `"${tagName}"`
+          } else {
+            formattedTag += tagName
+          }
+          
+          selectedTagNames.push(formattedTag)
         }
       })
     })
   })
+
+  // Build search query string with properly formatted tags
+  const tagQuery = selectedTagNames.join(' ')
+  let finalQuery = tagQuery
   
-  // Build search query string with properly quoted multi-word tags
-  const queryString = selectedTagNames.join(' ')
-  navigateTo(`/search?q=${encodeURIComponent(queryString)}`)
+  // Add search options
+  const searchOptions = []
+  
+  // Add version filter if needed
+  if (!showAlternateVersions.value) {
+    searchOptions.push('version:primary')
+  }
+  
+  // Add partial match option if enabled
+  if (usePartialMatch.value) {
+    searchOptions.push('match:partial')
+  }
+  
+  // Combine search options with tag query
+  if (searchOptions.length > 0) {
+    const optionsQuery = searchOptions.join(' ')
+    if (finalQuery) {
+      finalQuery = `${optionsQuery} ${finalQuery}`
+    } else {
+      finalQuery = optionsQuery
+    }
+  }
+
+  navigateTo(`/search?q=${encodeURIComponent(finalQuery)}`)
 }
 </script>

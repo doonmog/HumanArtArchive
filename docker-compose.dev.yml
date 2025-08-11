@@ -1,0 +1,47 @@
+services:
+  db:
+    build:
+      context: ./db
+    container_name: db
+    restart: always
+    env_file:
+      - ./db/.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  back:
+    build:
+      context: ./back
+    container_name: back
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./db/.env
+    networks:
+      - app-network
+
+  front:
+    build:
+      context: ./front
+    container_name: front
+    restart: always
+    depends_on:
+      - back
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

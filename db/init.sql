@@ -40,7 +40,7 @@ CREATE TABLE "category" (
 CREATE TABLE "tag_group" (
   "group_id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "category_id" UUID,
-  "name" TEXT,
+  "name" TEXT UNIQUE,
   "description" TEXT
 );
 

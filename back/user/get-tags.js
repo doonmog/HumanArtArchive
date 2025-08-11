@@ -81,7 +81,7 @@ module.exports = (pool) => {
     }
   });
 
-  // Get tag information by name
+  // Get tag information by name or group-tag pair
   router.get('/tag-by-name/:name', async (req, res) => {
     try {
       const { name } = req.params;
@@ -90,24 +90,79 @@ module.exports = (pool) => {
         return res.status(400).json({ message: 'Tag name is required' });
       }
       
+      // Check if this is a group-tag pair (contains a hyphen)
+      if (name.includes('-')) {
+        // Parse the group-tag pair, handling quoted strings
+        let inQuotes = false;
+        let hyphenPos = -1;
+        
+        for (let i = 0; i < name.length; i++) {
+          if (name[i] === '"') {
+            inQuotes = !inQuotes;
+          } else if (name[i] === '-' && !inQuotes) {
+            hyphenPos = i;
+            break;
+          }
+        }
+        
+        // If we found a valid hyphen separator
+        if (hyphenPos !== -1) {
+          const groupName = name.substring(0, hyphenPos).trim();
+          const tagName = name.substring(hyphenPos + 1).trim();
+          
+          // Remove quotes if they exist
+          const cleanGroupName = groupName.startsWith('"') && groupName.endsWith('"') ? 
+            groupName.substring(1, groupName.length - 1) : groupName;
+            
+          const cleanTagName = tagName.startsWith('"') && tagName.endsWith('"') ? 
+            tagName.substring(1, tagName.length - 1) : tagName;
+          
+          const result = await pool.query(`
+            SELECT 
+              t.tag_id,
+              t.name,
+              t.description,
+              tg.name as group_name,
+              c.name as category_name,
+              CONCAT(tg.name, '-', t.name) as full_tag_name
+            FROM tag t
+            JOIN tag_group tg ON t.group_id = tg.group_id
+            JOIN category c ON tg.category_id = c.category_id
+            WHERE LOWER(tg.name) = LOWER($1) AND LOWER(t.name) = LOWER($2)
+            ORDER BY tg.name, t.name
+          `, [cleanGroupName, cleanTagName]);
+          
+          if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Tag not found' });
+          }
+          
+          // Return all matching tags
+          return res.json({ tags: result.rows });
+        }
+      }
+      
+      // Default case: search by tag name only
       const result = await pool.query(`
         SELECT 
           t.tag_id,
           t.name,
           t.description,
           tg.name as group_name,
-          c.name as category_name
+          c.name as category_name,
+          CONCAT(tg.name, '-', t.name) as full_tag_name
         FROM tag t
         JOIN tag_group tg ON t.group_id = tg.group_id
         JOIN category c ON tg.category_id = c.category_id
         WHERE LOWER(t.name) = LOWER($1)
+        ORDER BY tg.name, t.name
       `, [name]);
       
       if (result.rows.length === 0) {
         return res.status(404).json({ message: 'Tag not found' });
       }
       
-      res.json({ tag: result.rows[0] });
+      // Return all matching tags instead of just the first one
+      res.json({ tags: result.rows });
       
     } catch (error) {
       console.error('Error fetching tag by name:', error);
