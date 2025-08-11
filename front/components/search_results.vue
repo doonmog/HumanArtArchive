@@ -181,7 +181,7 @@
     <div v-if="hasPartialMatches" class="mt-12 mb-8">
       <div class="flex items-center space-x-4">
         <hr class="flex-grow border-t border-gray-300" />
-        <h2 class="text-xl font-semibold text-gray-700">Partial Matches (Matches most but not all searched tags)</h2>
+        <h2 class="text-xl font-semibold text-gray-700">Partial Matches (Matches some but not all searched tags, showing closest matches first)</h2>
         <hr class="flex-grow border-t border-gray-300" />
       </div>
       

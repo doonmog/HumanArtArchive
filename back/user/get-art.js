@@ -80,73 +80,74 @@ module.exports = (pool) => {
         let seenArtworkIds = new Set();
         let totalItems = 0;
         
-        // First, get exact matches (all tags)
-        const exactMatchQuery = `
-          SELECT DISTINCT
-            a.artwork_id,
-            a.artwork_name as title,
-            ar.name as artist,
-            a.year,
-            a.description,
-            i2.image_id,
-            i2.display_order,
-            CASE WHEN i2.image_id IS NOT NULL THEN true ELSE false END as has_image,
-            ${tagQueries.length} as match_score
-          FROM artwork a
-          LEFT JOIN artist ar ON a.artist_id = ar.artist_id
-          LEFT JOIN image i2 ON a.artwork_id = i2.artwork_id
-          WHERE ${whereClause}
-          ORDER BY a.artwork_id, i2.display_order
-        `;
+        // Helper function to get combinations of tags
+        const getCombinations = (arr, size) => {
+          if (size > arr.length) return [];
+          if (size === arr.length) return [arr];
+          if (size === 1) return arr.map(el => [el]);
+          
+          const combinations = [];
+          for (let i = 0; i <= arr.length - size; i++) {
+            const head = arr[i];
+            const tailCombinations = getCombinations(arr.slice(i + 1), size - 1);
+            for (const tailCombination of tailCombinations) {
+              combinations.push([head, ...tailCombination]);
+            }
+          }
+          return combinations;
+        };
         
-        const exactMatchResult = await pool.query(exactMatchQuery, parameters);
+        // Helper function to search for artworks with a specific tag combination
+        const searchWithTags = async (tags, matchScore) => {
+          if (tags.length === 0) return [];
+          
+          const searchQuery = tags.join(' AND ');
+          const { whereClause: searchWhereClause, parameters: searchParameters } = parseSearchQuery(searchQuery);
+          
+          const query = `
+            SELECT DISTINCT
+              a.artwork_id,
+              a.artwork_name as title,
+              ar.name as artist,
+              a.year,
+              a.description,
+              i2.image_id,
+              i2.display_order,
+              CASE WHEN i2.image_id IS NOT NULL THEN true ELSE false END as has_image,
+              ${matchScore} as match_score
+            FROM artwork a
+            LEFT JOIN artist ar ON a.artist_id = ar.artist_id
+            LEFT JOIN image i2 ON a.artwork_id = i2.artwork_id
+            WHERE ${searchWhereClause}
+            ORDER BY a.artwork_id, i2.display_order
+          `;
+          
+          const result = await pool.query(query, searchParameters);
+          return result.rows;
+        };
         
-        // Add exact matches to results
-        exactMatchResult.rows.forEach(row => {
-          allResults.push(row);
-          seenArtworkIds.add(row.artwork_id);
-        });
-        
-        // If we have more than one tag, also get partial matches
-        if (tagQueries.length > 1) {
-          // For each tag, create a query that matches all tags except this one
-          for (let i = 0; i < tagQueries.length; i++) {
-            // Create a copy of tagQueries without the current tag
-            const remainingTags = [...tagQueries];
-            remainingTags.splice(i, 1);
+        // Start with full tag count and work down recursively
+        for (let tagCount = tagQueries.length; tagCount >= 1; tagCount--) {
+          const combinations = getCombinations(tagQueries, tagCount);
+          let foundNewResults = false;
+          
+          for (const tagCombination of combinations) {
+            const results = await searchWithTags(tagCombination, tagCount);
             
-            // Create a new search query with the remaining tags
-            const partialSearchQuery = remainingTags.join(' AND ');
-            const { whereClause: partialWhereClause, parameters: partialParameters } = parseSearchQuery(partialSearchQuery);
-            
-            // Query for artworks matching all but this one tag
-            const partialMatchQuery = `
-              SELECT DISTINCT
-                a.artwork_id,
-                a.artwork_name as title,
-                ar.name as artist,
-                a.year,
-                a.description,
-                i2.image_id,
-                i2.display_order,
-                CASE WHEN i2.image_id IS NOT NULL THEN true ELSE false END as has_image,
-                ${remainingTags.length} as match_score
-              FROM artwork a
-              LEFT JOIN artist ar ON a.artist_id = ar.artist_id
-              LEFT JOIN image i2 ON a.artwork_id = i2.artwork_id
-              WHERE ${partialWhereClause}
-              ORDER BY a.artwork_id, i2.display_order
-            `;
-            
-            const partialMatchResult = await pool.query(partialMatchQuery, partialParameters);
-            
-            // Add partial matches to results if not already included
-            partialMatchResult.rows.forEach(row => {
+            // Add results that haven't been seen before
+            results.forEach(row => {
               if (!seenArtworkIds.has(row.artwork_id)) {
                 allResults.push(row);
                 seenArtworkIds.add(row.artwork_id);
+                foundNewResults = true;
               }
             });
+          }
+          
+          // If we found results at this level and we have enough results, we can stop
+          // This prevents excessive searching when we already have good matches
+          if (foundNewResults && allResults.length >= limitNum) {
+            break;
           }
         }
         
