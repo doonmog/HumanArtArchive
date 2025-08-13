@@ -216,7 +216,7 @@ const handleSearch = async () => {
   }
   
   // Add partial match option if enabled
-  if (usePartialMatch.value) {
+  if (usePartialMatch.value && selectedTags.value.length > 1) {
     searchOptions.push('match:partial')
   }
   
