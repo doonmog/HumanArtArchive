@@ -23,13 +23,16 @@ const port = 3001;
 
 app.set('trust proxy', 1);
 
-// Database connection
+// Database connection with connection limits
 const pool = new Pool({
   user: process.env.POSTGRES_USER,
   password: process.env.POSTGRES_PASSWORD,
   host: 'db',
   port: 5432,
   database: 'db',
+  max: 20,           // Maximum number of clients in the pool
+  idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
+  connectionTimeoutMillis: 2000, // How long to wait for a connection
 });
 
 app.use(cors({
@@ -57,7 +60,7 @@ const limiter = rateLimit({
 });
 
 // Apply rate limiting to all requests
-//app.use(limiter);
+app.use(limiter);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Backend is running' });
