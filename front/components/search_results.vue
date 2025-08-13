@@ -148,7 +148,7 @@
             <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
               <nuxt-img
                 v-if="artwork.has_image && artwork.image_id"
-                :src="`/api/image-by-id/${artwork.image_id}`"
+                :src="`/api/thumbnail/${artwork.image_id}?size=500`"
                 :alt="artwork.title"
                 provider="backend"
                 class="w-full h-full object-cover"
@@ -211,7 +211,7 @@
             <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
               <nuxt-img
                 v-if="artwork.has_image && artwork.image_id"
-                :src="`/api/image-by-id/${artwork.image_id}`"
+                :src="`/api/thumbnail/${artwork.image_id}?size=500`"
                 :alt="artwork.title"
                 provider="backend"
                 class="w-full h-full object-cover"

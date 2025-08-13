@@ -8,6 +8,7 @@ require('dotenv').config({ path: path.join(__dirname, '../db/.env') });
 
 const getArtRoutes = require('./user/get-art.js');
 const getImageRoutes = require('./user/get-image.js');
+const getThumbnailRoutes = require('./user/get-thumbnail.js');
 const getArtworkDetailsRoutes = require('./user/get-artwork-details.js');
 const getTagsRoutes = require('./user/get-tags.js');
 const getUsedTagsRoutes = require('./user/get-used-tags.js');
@@ -56,7 +57,7 @@ const limiter = rateLimit({
 });
 
 // Apply rate limiting to all requests
-app.use(limiter);
+//app.use(limiter);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Backend is running' });
@@ -69,6 +70,7 @@ app.get('/', (req, res) => {
 // Therefore, all API routes must be mounted at root ('/') not '/api'
 app.use('/', getArtRoutes(pool));
 app.use('/', getImageRoutes(pool));
+app.use('/', getThumbnailRoutes(pool));
 app.use('/', getArtworkDetailsRoutes(pool));
 app.use('/', getTagsRoutes(pool));
 app.use('/', getUsedTagsRoutes(pool));
