@@ -240,7 +240,7 @@ module.exports = (pool) => {
     }
   });
 
-  // Update tag group description
+  // Update tag group name and/or description
   router.put('/manage-tags/update-tag-group/:groupId', verifyAdminToken, async (req, res) => {
     const client = await pool.connect();
     
@@ -248,13 +248,91 @@ module.exports = (pool) => {
       await client.query('BEGIN');
       
       const { groupId } = req.params;
-      const { description } = req.body;
+      const { name, description } = req.body;
       
       if (!groupId) {
         return res.status(400).json({ message: 'Group ID is required' });
       }
       
       // Verify group exists
+      const groupResult = await client.query(
+        'SELECT group_id, category_id FROM tag_group WHERE group_id = $1',
+        [groupId]
+      );
+      
+      if (groupResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Tag group not found' });
+      }
+      
+      const categoryId = groupResult.rows[0].category_id;
+      
+      // If name is being updated, check for duplicates in the same category
+      if (name) {
+        const duplicateCheck = await client.query(
+          'SELECT group_id FROM tag_group WHERE name = $1 AND category_id = $2 AND group_id != $3',
+          [name.trim(), categoryId, groupId]
+        );
+        
+        if (duplicateCheck.rows.length > 0) {
+          return res.status(409).json({ message: 'Another tag group with this name already exists in the category' });
+        }
+      }
+      
+      // Update group name and/or description
+      let updateQuery = 'UPDATE tag_group SET ';
+      const updateValues = [];
+      const updateFields = [];
+      
+      if (name !== undefined) {
+        updateFields.push('name = $' + (updateValues.length + 1));
+        updateValues.push(name.trim());
+      }
+      
+      if (description !== undefined) {
+        updateFields.push('description = $' + (updateValues.length + 1));
+        updateValues.push(description?.trim() || null);
+      }
+      
+      if (updateFields.length === 0) {
+        return res.status(400).json({ message: 'No fields to update' });
+      }
+      
+      updateQuery += updateFields.join(', ');
+      updateQuery += ' WHERE group_id = $' + (updateValues.length + 1);
+      updateValues.push(groupId);
+      
+      await client.query(updateQuery, updateValues);
+      
+      await client.query('COMMIT');
+      
+      res.json({
+        message: 'Tag group updated successfully',
+        groupId
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Tag group update error:', error);
+      res.status(500).json({ message: 'Failed to update tag group' });
+    } finally {
+      client.release();
+    }
+  });
+
+  // Delete tag group
+  router.delete('/manage-tags/delete-tag-group/:groupId', verifyAdminToken, async (req, res) => {
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      const { groupId } = req.params;
+      
+      if (!groupId) {
+        return res.status(400).json({ message: 'Group ID is required' });
+      }
+      
+      // Check if group exists
       const groupResult = await client.query(
         'SELECT group_id FROM tag_group WHERE group_id = $1',
         [groupId]
@@ -264,23 +342,92 @@ module.exports = (pool) => {
         return res.status(404).json({ message: 'Tag group not found' });
       }
       
-      // Update group description
+      // Check if group has tags
+      const tagCount = await client.query(
+        'SELECT COUNT(*) as count FROM tag WHERE group_id = $1',
+        [groupId]
+      );
+      
+      if (parseInt(tagCount.rows[0].count) > 0) {
+        return res.status(400).json({ 
+          message: 'Cannot delete tag group that contains tags. Please delete all tags first.' 
+        });
+      }
+      
+      // Delete the tag group
       await client.query(
-        'UPDATE tag_group SET description = $1 WHERE group_id = $2',
-        [description?.trim() || null, groupId]
+        'DELETE FROM tag_group WHERE group_id = $1',
+        [groupId]
       );
       
       await client.query('COMMIT');
       
       res.json({
-        message: 'Tag group description updated successfully',
+        message: 'Tag group deleted successfully',
         groupId
       });
       
     } catch (error) {
       await client.query('ROLLBACK');
-      console.error('Tag group update error:', error);
-      res.status(500).json({ message: 'Failed to update tag group description' });
+      console.error('Tag group deletion error:', error);
+      res.status(500).json({ message: 'Failed to delete tag group' });
+    } finally {
+      client.release();
+    }
+  });
+
+  // Delete tag
+  router.delete('/manage-tags/delete-tag/:tagId', verifyAdminToken, async (req, res) => {
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      const { tagId } = req.params;
+      
+      if (!tagId) {
+        return res.status(400).json({ message: 'Tag ID is required' });
+      }
+      
+      // Check if tag exists
+      const tagResult = await client.query(
+        'SELECT tag_id FROM tag WHERE tag_id = $1',
+        [tagId]
+      );
+      
+      if (tagResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Tag not found' });
+      }
+      
+      // Check if tag is used in any images
+      const usageCount = await client.query(
+        'SELECT COUNT(*) as count FROM image_tags WHERE tag_id = $1',
+        [tagId]
+      );
+      
+      if (parseInt(usageCount.rows[0].count) > 0) {
+        return res.status(400).json({ 
+          message: `Cannot delete tag as it is used in ${usageCount.rows[0].count} image(s). Please remove it from all images first.` 
+        });
+      }
+      
+      // Delete the tag
+      await client.query(
+        'DELETE FROM tag WHERE tag_id = $1',
+        [tagId]
+      );
+      
+      await client.query('COMMIT');
+      
+      res.json({
+        message: 'Tag deleted successfully',
+        tagId
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Tag deletion error:', error);
+      res.status(500).json({ message: 'Failed to delete tag' });
     } finally {
       client.release();
     }

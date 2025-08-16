@@ -90,80 +90,130 @@
                 
                 <div v-for="group in category.groups" :key="group.groupId" class="ml-4 mb-4 border-l-2 border-gray-200 pl-4">
                   <div class="flex items-start justify-between">
-                    <div>
-                      <h4 class="text-md font-medium text-gray-800">{{ group.name }}</h4>
-                      <div v-if="editingGroupId !== group.groupId" class="text-sm text-gray-500">
-                        {{ group.description || 'No description' }}
-                      </div>
-                      <div v-else class="mt-2">
-                        <input 
-                          type="text" 
-                          v-model="editingGroupDescription" 
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
-                          placeholder="Enter description"
-                        />
-                        <div class="mt-2 flex space-x-2">
-                          <button @click="saveGroupDescription(group.groupId)" class="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700">
+                    <div class="flex-1">
+                      <!-- Edit group form -->
+                      <div v-if="editingGroupId === group.groupId" class="space-y-3">
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700 mb-1">Group Name</label>
+                          <input 
+                            v-model="editingGroupName" 
+                            type="text"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Enter group name"
+                          />
+                        </div>
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                          <textarea 
+                            v-model="editingGroupDescription" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Enter group description"
+                            rows="2"
+                          ></textarea>
+                        </div>
+                        <div class="flex space-x-2">
+                          <button 
+                            @click="saveGroupChanges(group.groupId)" 
+                            class="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                            :disabled="!editingGroupName.trim()"
+                          >
                             Save
                           </button>
-                          <button @click="cancelEditingGroup()" class="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-md hover:bg-gray-300">
+                          <button 
+                            @click="cancelEditingGroup" 
+                            class="px-3 py-1 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600"
+                          >
                             Cancel
                           </button>
                         </div>
                       </div>
+                      
+                      <!-- Display group info -->
+                      <div v-else>
+                        <h4 class="text-md font-medium text-gray-800">{{ group.name }}</h4>
+                        <p v-if="group.description" class="text-sm text-gray-500 mt-1">{{ group.description }}</p>
+                        <p v-else class="text-sm text-gray-400 italic mt-1">No description</p>
+                      </div>
                     </div>
-                    <button 
-                      v-if="editingGroupId !== group.groupId" 
-                      @click="startEditingGroup(group)" 
-                      class="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Edit Description
-                    </button>
+                    
+                    <!-- Group action buttons -->
+                    <div v-if="editingGroupId !== group.groupId" class="flex space-x-2">
+                      <button 
+                        @click="startEditingGroup(group)" 
+                        class="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        @click="deleteGroup(group)" 
+                        class="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                   
                   <div class="mt-2">
-                    <div v-for="tag in group.tags" :key="tag.tagId" class="ml-4 mb-2 flex items-start justify-between">
-                      <div>
-                        <span v-if="editingTagId !== tag.tagId" class="text-md text-gray-700">{{ tag.name }}</span>
-                        <div v-if="editingTagId !== tag.tagId" class="text-sm text-gray-500">
-                          {{ tag.description || 'No description' }}
+                    <div v-for="tag in group.tags" :key="tag.tagId" class="ml-4 mb-2">
+                      <!-- Edit tag form -->
+                      <div v-if="editingTagId === tag.tagId" class="space-y-2">
+                        <div>
+                          <label class="block text-sm font-medium text-gray-600 mb-1">Tag Name</label>
+                          <input 
+                            v-model="editingTagName" 
+                            type="text"
+                            class="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Enter tag name"
+                          />
                         </div>
-                        <div v-else class="mt-2">
-                          <div class="mb-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Tag Name</label>
-                            <input 
-                              type="text" 
-                              v-model="editingTagName" 
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
-                              placeholder="Enter tag name"
-                            />
-                          </div>
-                          <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                            <input 
-                              type="text" 
-                              v-model="editingTagDescription" 
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
-                              placeholder="Enter description"
-                            />
-                          </div>
-                          <div class="mt-2 flex space-x-2">
-                            <button @click="saveTagDescription(tag.tagId)" class="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700">
-                              Save
-                            </button>
-                            <button @click="cancelEditingTag()" class="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-md hover:bg-gray-300">
-                              Cancel
-                            </button>
-                          </div>
+                        <div>
+                          <label class="block text-sm font-medium text-gray-600 mb-1">Description</label>
+                          <textarea 
+                            v-model="editingTagDescription" 
+                            class="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Enter tag description"
+                            rows="2"
+                          ></textarea>
+                        </div>
+                        <div class="flex space-x-2">
+                          <button 
+                            @click="saveTagChanges(tag.tagId)" 
+                            class="px-2 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700"
+                            :disabled="!editingTagName.trim()"
+                          >
+                            Save
+                          </button>
+                          <button 
+                            @click="cancelEditingTag" 
+                            class="px-2 py-1 bg-gray-500 text-white text-xs rounded-md hover:bg-gray-600"
+                          >
+                            Cancel
+                          </button>
                         </div>
                       </div>
-                      <button 
-                        v-if="editingTagId !== tag.tagId" 
-                        @click="startEditingTag(tag)" 
-                        class="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        Edit Tag
-                      </button>
+                      
+                      <!-- Display tag info -->
+                      <div v-else class="flex items-center justify-between">
+                        <div>
+                          <span class="text-sm font-medium text-gray-700">{{ tag.name }}</span>
+                          <p v-if="tag.description" class="text-xs text-gray-500">{{ tag.description }}</p>
+                          <p v-else class="text-xs text-gray-400 italic">No description</p>
+                        </div>
+                        <div class="flex space-x-2">
+                          <button 
+                            @click="startEditingTag(tag)" 
+                            class="text-blue-600 hover:text-blue-800 text-xs"
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            @click="deleteTag(tag)" 
+                            class="text-red-600 hover:text-red-800 text-xs"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -203,6 +253,7 @@ const creatingTag = ref(false)
 
 // Editing state
 const editingGroupId = ref(null)
+const editingGroupName = ref('')
 const editingGroupDescription = ref('')
 const editingTagId = ref(null)
 const editingTagDescription = ref('')
@@ -309,20 +360,24 @@ async function createTag() {
   }
 }
 
-// Start editing a group description
+// Start editing a group
 function startEditingGroup(group) {
   editingGroupId.value = group.groupId
+  editingGroupName.value = group.name || ''
   editingGroupDescription.value = group.description || ''
 }
 
 // Cancel editing group
 function cancelEditingGroup() {
   editingGroupId.value = null
+  editingGroupName.value = ''
   editingGroupDescription.value = ''
 }
 
-// Save group description
-async function saveGroupDescription(groupId) {
+// Save group changes
+async function saveGroupChanges(groupId) {
+  if (!editingGroupName.value.trim()) return
+  
   try {
     const token = useCookie('admin-token')
     await $fetch(`/api/admin/manage-tags/update-tag-group/${groupId}`, {
@@ -331,6 +386,7 @@ async function saveGroupDescription(groupId) {
         'Authorization': `Bearer ${token.value}`
       },
       body: {
+        name: editingGroupName.value,
         description: editingGroupDescription.value
       }
     })
@@ -339,6 +395,7 @@ async function saveGroupDescription(groupId) {
     for (const category of categories.value) {
       const group = category.groups.find(g => g.groupId === groupId)
       if (group) {
+        group.name = editingGroupName.value
         group.description = editingGroupDescription.value
         break
       }
@@ -349,15 +406,53 @@ async function saveGroupDescription(groupId) {
     
   } catch (err) {
     console.error('Failed to update tag group:', err)
-    error.value = 'Failed to update tag group. Please try again.'
+    if (err.data?.message) {
+      error.value = err.data.message
+    } else {
+      error.value = 'Failed to update tag group. Please try again.'
+    }
+  }
+}
+
+// Delete tag group
+async function deleteGroup(group) {
+  if (!confirm(`Are you sure you want to delete the tag group "${group.name}"? This action cannot be undone.`)) {
+    return
+  }
+  
+  try {
+    const token = useCookie('admin-token')
+    await $fetch(`/api/admin/manage-tags/delete-tag-group/${group.groupId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token.value}`
+      }
+    })
+    
+    // Remove from UI
+    for (const category of categories.value) {
+      const groupIndex = category.groups.findIndex(g => g.groupId === group.groupId)
+      if (groupIndex !== -1) {
+        category.groups.splice(groupIndex, 1)
+        break
+      }
+    }
+    
+  } catch (err) {
+    console.error('Failed to delete tag group:', err)
+    if (err.data?.message) {
+      error.value = err.data.message
+    } else {
+      error.value = 'Failed to delete tag group. Please try again.'
+    }
   }
 }
 
 // Start editing a tag
 function startEditingTag(tag) {
   editingTagId.value = tag.tagId
-  editingTagDescription.value = tag.description || ''
   editingTagName.value = tag.name || ''
+  editingTagDescription.value = tag.description || ''
 }
 
 // Cancel editing tag
@@ -368,7 +463,9 @@ function cancelEditingTag() {
 }
 
 // Save tag changes
-async function saveTagDescription(tagId) {
+async function saveTagChanges(tagId) {
+  if (!editingTagName.value.trim()) return
+  
   try {
     const token = useCookie('admin-token')
     await $fetch(`/api/admin/manage-tags/update-tag/${tagId}`, {
@@ -399,7 +496,47 @@ async function saveTagDescription(tagId) {
     
   } catch (err) {
     console.error('Failed to update tag:', err)
-    error.value = 'Failed to update tag. Please try again.'
+    if (err.data?.message) {
+      error.value = err.data.message
+    } else {
+      error.value = 'Failed to update tag. Please try again.'
+    }
+  }
+}
+
+// Delete tag
+async function deleteTag(tag) {
+  if (!confirm(`Are you sure you want to delete the tag "${tag.name}"? This action cannot be undone.`)) {
+    return
+  }
+  
+  try {
+    const token = useCookie('admin-token')
+    await $fetch(`/api/admin/manage-tags/delete-tag/${tag.tagId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token.value}`
+      }
+    })
+    
+    // Remove from UI
+    for (const category of categories.value) {
+      for (const group of category.groups) {
+        const tagIndex = group.tags.findIndex(t => t.tagId === tag.tagId)
+        if (tagIndex !== -1) {
+          group.tags.splice(tagIndex, 1)
+          return
+        }
+      }
+    }
+    
+  } catch (err) {
+    console.error('Failed to delete tag:', err)
+    if (err.data?.message) {
+      error.value = err.data.message
+    } else {
+      error.value = 'Failed to delete tag. Please try again.'
+    }
   }
 }
 </script>
