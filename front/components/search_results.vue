@@ -663,7 +663,8 @@ onMounted(() => {
 const masonryContainer = ref(null)
 const masonryColumns = ref([])
 const partialMatchesColumns = ref([])
-const masonryColumnCount = ref(5)
+const masonryColumnCount = ref(0) // Start with 0 to indicate not calculated yet
+const masonryInitialized = ref(false)
 
 // Watch for view mode changes and persist to localStorage
 watch(viewMode, (newMode) => {
@@ -700,11 +701,34 @@ const initializeMasonry = () => {
     newColumnCount = 5
   }
   
+  // If container width is 0 (which can happen at initial load with zoom),
+  // use a fallback column count based on window width
+  if (containerWidth === 0 && typeof window !== 'undefined') {
+    const windowWidth = window.innerWidth
+    if (windowWidth < 640) {
+      newColumnCount = 1
+    } else if (windowWidth < 768) {
+      newColumnCount = 2
+    } else if (windowWidth < 1024) {
+      newColumnCount = 3
+    } else if (windowWidth < 1280) {
+      newColumnCount = 4
+    } else {
+      newColumnCount = 5
+    }
+  }
+  
+  // Ensure we always have at least 1 column
+  newColumnCount = Math.max(1, newColumnCount || 1)
+  
   if (newColumnCount !== masonryColumnCount.value) {
     masonryColumnCount.value = newColumnCount
     // Reinitialize columns and redistribute artworks
     redistributeArtworks()
   }
+  
+  // Mark masonry as initialized
+  masonryInitialized.value = true
 }
 
 // Redistribute artworks when column count changes
@@ -790,10 +814,25 @@ onMounted(() => {
   }
   
   // Initialize masonry if starting in dynamic view
+  // Use immediate initialization to prevent layout jumps
   if (viewMode.value === 'dynamic') {
+    // Initialize immediately to get column count before first render
+    initializeMasonry()
+    
+    // Also initialize after nextTick to ensure container is properly sized
     nextTick(() => {
       initializeMasonry()
+      
+      // Add a small delay to handle zoom states that might affect layout
+      setTimeout(() => {
+        initializeMasonry()
+      }, 50)
     })
+    
+    // Add a longer delay initialization to handle slow-loading pages or zoom changes
+    setTimeout(() => {
+      initializeMasonry()
+    }, 300)
   }
 })
 
