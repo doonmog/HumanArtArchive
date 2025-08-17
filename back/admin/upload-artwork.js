@@ -10,7 +10,7 @@ const upload = multer({
   storage: storage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit per file
-    files: 10 // Max 10 images per artwork
+    files: 15 // Max 15 images per artwork
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -58,7 +58,7 @@ module.exports = (pool) => {
     next();
   });
 
-  router.post('/upload-artwork', verifyAdminToken, upload.array('images', 10), async (req, res) => {
+  router.post('/upload-artwork', verifyAdminToken, upload.array('images', 15), async (req, res) => {
     const client = await pool.connect();
     
     try {

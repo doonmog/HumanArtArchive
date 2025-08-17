@@ -733,13 +733,16 @@ const getVisiblePages = () => {
 }
 
 // Watch for query changes
-watch(() => props.query, (newQuery) => {
-  // Clear selections when query changes
-  selectedArtworks.value.clear()
-  selectedImages.value.clear()
-  currentPage.value = 1
-  fetchResults(newQuery, 1)
-}, { immediate: true })
+watch(() => props.query, (newQuery, oldQuery) => {
+  // Only reset page if the query actually changed (not just on mount)
+  if (oldQuery !== undefined && newQuery !== oldQuery) {
+    // Clear selections when query changes
+    selectedArtworks.value.clear()
+    selectedImages.value.clear()
+    currentPage.value = 1
+    fetchResults(newQuery, 1)
+  }
+})
 
 // Watch for page prop changes from URL
 watch(() => props.page, (newPage) => {
@@ -748,6 +751,11 @@ watch(() => props.page, (newPage) => {
     fetchResults(props.query, newPage)
   }
 }, { immediate: true })
+
+// Initial fetch on mount
+onMounted(() => {
+  fetchResults(props.query, props.page)
+})
 
 // Navigation prevention when artworks are selected
 const beforeUnloadHandler = (event) => {

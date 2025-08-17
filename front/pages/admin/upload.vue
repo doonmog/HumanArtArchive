@@ -62,7 +62,7 @@
 
           <div>
             <label for="images" class="block text-sm font-medium text-gray-700 mb-2">
-              Images * (up to 10 images)
+              Images * (up to 15 images)
             </label>
             
             <!-- File Upload Area -->
@@ -89,7 +89,7 @@
                   <p class="pl-1">or drag and drop</p>
                 </div>
                 <p class="text-xs text-gray-500">
-                  PNG, JPG, GIF up to 10MB each (max 10 images)
+                  PNG, JPG, GIF up to 10MB each (max 15 images)
                 </p>
               </div>
             </div>
@@ -205,8 +205,8 @@ const handleFileSelect = (event) => {
   const files = Array.from(event.target.files)
   
   for (const file of files) {
-    if (selectedFiles.value.length >= 10) {
-      error.value = 'Maximum 10 images allowed'
+    if (selectedFiles.value.length >= 15) {
+      error.value = 'Maximum 15 images allowed'
       break
     }
     
