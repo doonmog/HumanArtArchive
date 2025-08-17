@@ -1,8 +1,18 @@
+<script setup lang="ts">
+import { filename } from 'pathe/utils'
+
+const glob = import.meta.glob('@/assets/*.png', { eager: true })
+const images = Object.fromEntries(
+  Object.entries(glob).map(([key, value]) => [filename(key), value.default])
+)
+</script>
+
 <template>
   <header class="w-full p-4 bg-white shadow-sm">
     <div class="container mx-auto">
       <nav class="flex flex-row items-center justify-between">
-        <NuxtLink to="/" class="text-lg font-semibold text-gray-800 hover:text-gray-600">
+        <NuxtLink to="/" class="flex items-center gap-2 text-lg font-semibold text-gray-800 hover:text-gray-600">
+          <img :src="images['logo']" width="48" height="48" alt="Human Art Archive Logo" />
           Human Art Archive
         </NuxtLink>
         

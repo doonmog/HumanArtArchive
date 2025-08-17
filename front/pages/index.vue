@@ -1,10 +1,14 @@
-
-<script setup>
+<script setup lang="ts">
 import Search from '../components/search.vue'
+import { filename } from 'pathe/utils'
+const glob = import.meta.glob('@/assets/*.png', { eager: true })
+const images = Object.fromEntries(
+  Object.entries(glob).map(([key, value]) => [filename(key), value.default])
+)
 </script>
-
 <template>
   <div class="flex flex-col items-center justify-center min-h-screen px-4">
+    <img :src="images['logo']" width="200" height="200" alt="Human Art Archive Logo" class="mb-8" />
     <h1 class="text-5xl font-bold text-gray-800 mb-8 text-center">
       Human Art Archive
     </h1>
@@ -38,9 +42,8 @@ import Search from '../components/search.vue'
         About
       </NuxtLink>
     </div>
+    
   </div>
 </template>
-
 <style scoped>
-
 </style>
