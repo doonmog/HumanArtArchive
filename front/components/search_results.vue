@@ -18,64 +18,29 @@
       </p>
     </div>
 
+    <!-- View Toggle -->
+    <ViewToggle 
+      v-if="artworks.length > 0"
+      v-model:view-mode="viewMode"
+    />
+
     <!-- Admin selection controls -->
-    <div v-if="isAdmin && artworks.length > 0" class="mb-6 p-4 bg-gray-50 rounded-lg border">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-4">
-          <label class="flex items-center">
-            <input
-              type="checkbox"
-              :checked="isAllSelected"
-              :indeterminate="isSomeSelected && !isAllSelected"
-              @change="toggleSelectAll"
-              class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <span class="ml-2 text-sm font-medium text-gray-700">
-              {{ selectedCount === 0 ? 'Select All Visible' : 
-                 isAllSelected ? 'Deselect All' : 
-                 `Selected ${selectedCount} of ${totalSelectableCount}` }}
-            </span>
-          </label>
-        </div>
-        <div class="flex items-center space-x-2">
-          <span v-if="selectedCount > 0" class="text-sm text-gray-600">
-            {{ selectedImages.size }} image{{ selectedImages.size !== 1 ? 's' : '' }} selected
-            from {{ selectedArtworks.size }} artwork{{ selectedArtworks.size !== 1 ? 's' : '' }}
-          </span>
-          <button
-            v-if="selectedCount > 0"
-            @click="openEditSidebar"
-            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Edit Selected
-          </button>
-        </div>
-      </div>
-      <div class="mt-4 flex flex-wrap items-center gap-4">
-        <label class="flex items-center">
-          <input
-            type="checkbox"
-            v-model="selectEntireArtwork"
-            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-          />
-          <span class="ml-2 text-sm font-medium text-gray-700">
-            Select each image of artwork
-          </span>
-        </label>
-        
-        <div class="flex items-center">
-          <label for="items-per-page" class="mr-2 text-sm font-medium text-gray-700">Items per page:</label>
-          <select
-            id="items-per-page"
-            v-model="itemsPerPage"
-            @change="onPageSizeChange"
-            class="bg-white border border-gray-300 text-gray-700 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block p-2"
-          >
-            <option v-for="size in availablePageSizes" :key="size" :value="size">{{ size }}</option>
-          </select>
-        </div>
-      </div>
-    </div>
+    <AdminSelectionControls
+      :is-admin="isAdmin"
+      :total-artworks="artworks.length"
+      :selected-count="selectedCount"
+      :selected-images-count="selectedImages.size"
+      :selected-artworks-count="selectedArtworks.size"
+      :total-selectable-count="totalSelectableCount"
+      :is-all-selected="isAllSelected"
+      :is-some-selected="isSomeSelected"
+      v-model:select-entire-artwork="selectEntireArtwork"
+      :items-per-page="itemsPerPage"
+      :available-page-sizes="availablePageSizes"
+      @toggle-select-all="toggleSelectAll"
+      @open-edit-sidebar="openEditSidebar"
+      @page-size-change="onPageSizeChange"
+    />
 
     <div v-if="pending" class="flex justify-center items-center py-12">
       <svg class="h-8 w-8 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
@@ -123,56 +88,39 @@
         <hr class="flex-grow border-t border-gray-300" />
       </div>
       
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        <div
+      <!-- Grid View -->
+      <div v-if="viewMode === 'grid'" :class="gridClasses">
+        <ArtworkCard
           v-for="artwork in artworks"
           :key="`${artwork.artwork_id}-${artwork.image_id || 'no-image'}`"
-          class="artwork-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden relative group"
-          :class="{ 'ring-2 ring-blue-500': isAdmin && selectedImages.has(artwork.image_id) }"
+          :artwork="artwork"
+          :is-admin="isAdmin"
+          :is-selected="selectedImages.has(artwork.image_id)"
+          :view-mode="viewMode"
+          :image-size="500"
+          @toggle-selection="toggleSelection"
+          @confirm-navigation="confirmArtworkNavigation"
+        />
+      </div>
+      
+      <!-- Dynamic Masonry View -->
+      <div v-else ref="masonryContainer" class="dynamic-masonry-container">
+        <div 
+          v-for="(column, columnIndex) in masonryColumns" 
+          :key="columnIndex"
+          class="masonry-column"
         >
-          <!-- Selection checkbox for admin -->
-          <div v-if="isAdmin" class="absolute top-3 left-3 z-10">
-            <input
-              type="checkbox"
-              :checked="selectedImages.has(artwork.image_id)"
-              @change="toggleSelection(artwork)"
-              class="h-8 w-8 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-            />
-          </div>
-
-          <NuxtLink
-            :to="getArtworkLink(artwork)"
-            @click.prevent="confirmArtworkNavigation($event, getArtworkLink(artwork))"
-            class="block cursor-pointer hover:scale-105 transition-transform duration-200"
-          >
-            <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
-              <nuxt-img
-                v-if="artwork.has_image && artwork.image_id"
-                :src="`/api/thumbnail/${artwork.image_id}?size=500`"
-                :alt="artwork.title"
-                provider="backend"
-                class="w-full h-full object-cover"
-                loading="lazy"
-              />
-              <div v-else class="w-full h-full flex items-center justify-center">
-                <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              
-              <div class="artwork-info absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
-                <h3 class="font-semibold text-white text-sm mb-1 line-clamp-2">
-                  {{ artwork.title }}
-                </h3>
-                <p v-if="artwork.artist" class="text-gray-200 text-xs mb-1">
-                  {{ artwork.artist }}
-                </p>
-                <p v-if="artwork.year" class="text-gray-300 text-xs">
-                  {{ artwork.year }}
-                </p>
-              </div>
-            </div>
-          </NuxtLink>
+          <ArtworkCard
+            v-for="artwork in column"
+            :key="`${artwork.artwork_id}-${artwork.image_id || 'no-image'}`"
+            :artwork="artwork"
+            :is-admin="isAdmin"
+            :is-selected="selectedImages.has(artwork.image_id)"
+            :view-mode="viewMode"
+            :image-size="800"
+            @toggle-selection="toggleSelection"
+            @confirm-navigation="confirmArtworkNavigation"
+          />
         </div>
       </div>
     </div>
@@ -185,127 +133,52 @@
         <hr class="flex-grow border-t border-gray-300" />
       </div>
       
-      <!-- Partial Matches Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6">
-        <div
+      <!-- Grid View for Partial Matches -->
+      <div v-if="viewMode === 'grid'" :class="gridClasses" class="mt-6">
+        <ArtworkCard
           v-for="artwork in partialMatchesArtworks"
           :key="`${artwork.artwork_id}-${artwork.image_id || 'no-image'}-partial`"
-          class="artwork-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden relative group"
-          :class="{ 'ring-2 ring-blue-500': isAdmin && selectedImages.has(artwork.image_id) }"
+          :artwork="artwork"
+          :is-admin="isAdmin"
+          :is-selected="selectedImages.has(artwork.image_id)"
+          :view-mode="viewMode"
+          :image-size="500"
+          @toggle-selection="toggleSelection"
+          @confirm-navigation="confirmArtworkNavigation"
+        />
+      </div>
+      
+      <!-- Dynamic Masonry View for Partial Matches -->
+      <div v-else class="dynamic-masonry-container mt-6">
+        <div 
+          v-for="(column, columnIndex) in partialMatchesColumns" 
+          :key="`partial-${columnIndex}`"
+          class="masonry-column"
         >
-          <!-- Selection checkbox for admin -->
-          <div v-if="isAdmin" class="absolute top-3 left-3 z-10">
-            <input
-              type="checkbox"
-              :checked="selectedImages.has(artwork.image_id)"
-              @change="toggleSelection(artwork)"
-              class="h-8 w-8 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-            />
-          </div>
-
-          <NuxtLink
-            :to="getArtworkLink(artwork)"
-            @click.prevent="confirmArtworkNavigation($event, getArtworkLink(artwork))"
-            class="block cursor-pointer hover:scale-105 transition-transform duration-200"
-          >
-            <div class="aspect-square bg-gray-100 dark:bg-gray-700 relative">
-              <nuxt-img
-                v-if="artwork.has_image && artwork.image_id"
-                :src="`/api/thumbnail/${artwork.image_id}?size=500`"
-                :alt="artwork.title"
-                provider="backend"
-                class="w-full h-full object-cover"
-                loading="lazy"
-              />
-              <div v-else class="w-full h-full flex items-center justify-center">
-                <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              
-              <div class="artwork-info absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
-                <h3 class="font-semibold text-white text-sm mb-1 line-clamp-2">
-                  {{ artwork.title }}
-                </h3>
-                <p v-if="artwork.artist" class="text-gray-200 text-xs mb-1">
-                  {{ artwork.artist }}
-                </p>
-                <p v-if="artwork.year" class="text-gray-300 text-xs">
-                  {{ artwork.year }}
-                </p>
-              </div>
-            </div>
-          </NuxtLink>
+          <ArtworkCard
+            v-for="artwork in column"
+            :key="`${artwork.artwork_id}-${artwork.image_id || 'no-image'}-partial`"
+            :artwork="artwork"
+            :is-admin="isAdmin"
+            :is-selected="selectedImages.has(artwork.image_id)"
+            :view-mode="viewMode"
+            :image-size="800"
+            @toggle-selection="toggleSelection"
+            @confirm-navigation="confirmArtworkNavigation"
+          />
         </div>
       </div>
     </div>
 
-    <!-- Pagination Info -->
-    <div v-if="pagination" class="mt-8 text-center">
-      <p class="text-gray-600 dark:text-gray-400 mb-4">
-        Showing {{ artworks.length }} of {{ pagination.totalItems }} artwork{{ pagination.totalItems !== 1 ? 's' : '' }}
-        (Page {{ pagination.currentPage }} of {{ pagination.totalPages }})
-      </p>
-    </div>
-
     <!-- Pagination Controls -->
-    <div v-if="pagination && pagination.totalPages > 1" class="mt-6 flex justify-center items-center space-x-2">
-      <!-- Previous Button -->
-      <button
-        @click="prevPage"
-        :disabled="!pagination.hasPrevPage"
-        class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Previous
-      </button>
-
-      <!-- Page Numbers -->
-      <div class="flex space-x-1">
-        <!-- First page -->
-        <button
-          v-if="pagination.currentPage > 3"
-          @click="goToPage(1)"
-          class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-        >
-          1
-        </button>
-        <span v-if="pagination.currentPage > 4" class="px-2 py-2 text-gray-500">...</span>
-
-        <!-- Pages around current page -->
-        <button
-          v-for="page in getVisiblePages()"
-          :key="page"
-          @click="goToPage(page)"
-          :class="[
-            'px-3 py-2 text-sm font-medium rounded-md',
-            page === pagination.currentPage
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-          ]"
-        >
-          {{ page }}
-        </button>
-
-        <!-- Last page -->
-        <span v-if="pagination.currentPage < pagination.totalPages - 3" class="px-2 py-2 text-gray-500">...</span>
-        <button
-          v-if="pagination.currentPage < pagination.totalPages - 2"
-          @click="goToPage(pagination.totalPages)"
-          class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-        >
-          {{ pagination.totalPages }}
-        </button>
-      </div>
-
-      <!-- Next Button -->
-      <button
-        @click="nextPage"
-        :disabled="!pagination.hasNextPage"
-        class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Next
-      </button>
-    </div>
+    <PaginationControls
+      v-if="pagination"
+      :pagination="pagination"
+      :current-items-count="artworks.length"
+      @go-to-page="goToPage"
+      @next-page="nextPage"
+      @prev-page="prevPage"
+    />
 
     <!-- Edit Sidebar -->
     <div v-if="isAdmin && showEditSidebar" class="fixed inset-y-0 right-0 w-96 bg-white shadow-xl z-50 overflow-y-auto">
@@ -349,9 +222,13 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BulkAddTags from './bulk_add_tags.vue'
+import ArtworkCard from './artwork_card.vue'
+import PaginationControls from './pagination_controls.vue'
+import AdminSelectionControls from './admin_selection_controls.vue'
+import ViewToggle from './view_toggle.vue'
 
 const props = defineProps({
   query: {
@@ -367,6 +244,9 @@ const props = defineProps({
     default: false
   }
 })
+
+// View mode state
+const viewMode = ref('grid')
 
 // Multi-select state for admin
 const selectedArtworks = ref(new Set())
@@ -522,6 +402,14 @@ const wasMovedFromPartialMatches = ref(false)
 const hasPartialMatches = computed(() => partialMatchesArtworks.value.length > 0)
 const pagination = computed(() => searchResults.value?.pagination || null)
 
+// Grid classes for different view modes
+const gridClasses = computed(() => {
+  if (viewMode.value === 'dynamic') {
+    return 'dynamic-masonry-grid'
+  }
+  return 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'
+})
+
 // Determine if we have true exact matches or just showing best partial matches
 const isExactMatch = computed(() => {
   const allArtworks = searchResults.value?.artworks || []
@@ -657,10 +545,12 @@ const onBulkTagsApplied = () => {
   fetchResults(props.query, currentPage.value)
 }
 
-const onPageSizeChange = () => {
+const onPageSizeChange = (newSize) => {
+  itemsPerPage.value = newSize
+  
   // Save the selected page size to localStorage for persistence
   if (typeof localStorage !== 'undefined') {
-    localStorage.setItem('artArchivePageSize', itemsPerPage.value.toString())
+    localStorage.setItem('artArchivePageSize', newSize.toString())
   }
   
   // Reset to page 1 and refetch with new page size
@@ -714,23 +604,6 @@ const prevPage = () => {
   }
 }
 
-const getVisiblePages = () => {
-  if (!pagination.value) return []
-  
-  const current = pagination.value.currentPage
-  const total = pagination.value.totalPages
-  const pages = []
-  
-  // Show current page and 1-2 pages on each side
-  const start = Math.max(1, current - 2)
-  const end = Math.min(total, current + 2)
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
-  
-  return pages
-}
 
 // Watch for query changes
 watch(() => props.query, (newQuery, oldQuery) => {
@@ -777,11 +650,156 @@ onMounted(() => {
     if (savedPageSize && availablePageSizes.includes(parseInt(savedPageSize))) {
       itemsPerPage.value = parseInt(savedPageSize)
     }
+    
+    // Load saved view mode from localStorage if available
+    const savedViewMode = localStorage.getItem('artArchiveViewMode')
+    if (savedViewMode && ['grid', 'dynamic'].includes(savedViewMode)) {
+      viewMode.value = savedViewMode
+    }
+  }
+})
+
+// Masonry layout state
+const masonryContainer = ref(null)
+const masonryColumns = ref([])
+const partialMatchesColumns = ref([])
+const masonryColumnCount = ref(5)
+
+// Watch for view mode changes and persist to localStorage
+watch(viewMode, (newMode) => {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('artArchiveViewMode', newMode)
+  }
+  
+  // Initialize masonry when switching to dynamic view
+  if (newMode === 'dynamic') {
+    nextTick(() => {
+      initializeMasonry()
+    })
+  }
+})
+
+// Initialize masonry layout
+const initializeMasonry = () => {
+  if (!masonryContainer.value || viewMode.value !== 'dynamic') return
+  
+  // Calculate column count based on container width to match grid view breakpoints
+  const containerWidth = masonryContainer.value.offsetWidth
+  let newColumnCount
+  
+  // Match Tailwind CSS grid breakpoints
+  if (containerWidth < 640) { // sm
+    newColumnCount = 1
+  } else if (containerWidth < 768) { // md
+    newColumnCount = 2
+  } else if (containerWidth < 1024) { // lg
+    newColumnCount = 3
+  } else if (containerWidth < 1280) { // xl
+    newColumnCount = 4
+  } else { // 2xl and above
+    newColumnCount = 5
+  }
+  
+  if (newColumnCount !== masonryColumnCount.value) {
+    masonryColumnCount.value = newColumnCount
+    // Reinitialize columns and redistribute artworks
+    redistributeArtworks()
+  }
+}
+
+// Redistribute artworks when column count changes
+const redistributeArtworks = () => {
+  // Initialize empty columns
+  masonryColumns.value = Array(masonryColumnCount.value).fill().map(() => [])
+  partialMatchesColumns.value = Array(masonryColumnCount.value).fill().map(() => [])
+  
+  // Redistribute artworks
+  artworks.value.forEach((artwork, index) => {
+    addToMasonry(artwork, index)
+  })
+  
+  // Redistribute partial matches
+  partialMatchesArtworks.value.forEach((artwork, index) => {
+    addToPartialMasonry(artwork, index)
+  })
+}
+
+// Add artwork to shortest column (bottom placement)
+const addToMasonry = (artwork, index) => {
+  if (viewMode.value !== 'dynamic' || masonryColumns.value.length === 0) return
+  
+  // Find the shortest column
+  const columnHeights = masonryColumns.value.map(col => col.length)
+  const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights))
+  
+  // Add artwork to the shortest column
+  masonryColumns.value[shortestColumnIndex].push({ ...artwork, originalIndex: index })
+}
+
+// Populate masonry columns when artworks change
+watch([artworks, partialMatchesArtworks, viewMode], () => {
+  if (viewMode.value === 'dynamic') {
+    // Use the redistribute function to ensure proper column count
+    redistributeArtworks()
+  }
+}, { immediate: true })
+
+// Add partial match artwork to shortest column
+const addToPartialMasonry = (artwork, index) => {
+  if (viewMode.value !== 'dynamic' || partialMatchesColumns.value.length === 0) return
+  
+  // Find the shortest column
+  const columnHeights = partialMatchesColumns.value.map(col => col.length)
+  const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights))
+  
+  // Add artwork to the shortest column
+  partialMatchesColumns.value[shortestColumnIndex].push({ ...artwork, originalIndex: index })
+}
+
+// Handle window resize for responsive masonry with debouncing
+let resizeTimeout = null
+const handleResize = () => {
+  if (viewMode.value === 'dynamic') {
+    // Debounce resize events to prevent excessive recalculations
+    if (resizeTimeout) {
+      clearTimeout(resizeTimeout)
+    }
+    resizeTimeout = setTimeout(() => {
+      initializeMasonry()
+    }, 150)
+  }
+}
+
+// Add resize listener
+onMounted(() => {
+  window.addEventListener('beforeunload', beforeUnloadHandler)
+  window.addEventListener('resize', handleResize)
+  
+  // Load saved page size from localStorage if available
+  if (typeof localStorage !== 'undefined') {
+    const savedPageSize = localStorage.getItem('artArchivePageSize')
+    if (savedPageSize && availablePageSizes.includes(parseInt(savedPageSize))) {
+      itemsPerPage.value = parseInt(savedPageSize)
+    }
+    
+    // Load saved view mode from localStorage if available
+    const savedViewMode = localStorage.getItem('artArchiveViewMode')
+    if (savedViewMode && ['grid', 'dynamic'].includes(savedViewMode)) {
+      viewMode.value = savedViewMode
+    }
+  }
+  
+  // Initialize masonry if starting in dynamic view
+  if (viewMode.value === 'dynamic') {
+    nextTick(() => {
+      initializeMasonry()
+    })
   }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', beforeUnloadHandler)
+  window.removeEventListener('resize', handleResize)
 })
 
 // Add navigation prevention for internal Nuxt navigation
@@ -817,5 +835,28 @@ onBeforeUnmount(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.dynamic-masonry-container {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.masonry-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .dynamic-masonry-container {
+    gap: 1rem;
+  }
+  
+  .masonry-column {
+    gap: 1rem;
+  }
 }
 </style>
