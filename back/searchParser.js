@@ -163,6 +163,12 @@ class SearchParser {
     }
     
     if (token.type === 'IDENTIFIER' || token.type === 'QUOTED_STRING') {
+      // Special keyword for artworks with zero tags
+      if ((token.value || '').toLowerCase() === 'untagged' && !(this.position + 1 < this.tokens.length && this.tokens[this.position + 1].type === 'COLON')) {
+        this.position++;
+        return { type: 'UNTAGGED' };
+      }
+
       // Check if this is a field query (field:value)
       if (this.position + 1 < this.tokens.length && this.tokens[this.position + 1].type === 'COLON') {
         return this.parseFieldQuery();
@@ -294,6 +300,14 @@ class SearchParser {
       case 'MATCH_PARTIAL':
         // This is handled separately, just return true
         return '1=1';
+      
+      case 'UNTAGGED':
+        return `NOT EXISTS (
+          SELECT 1
+          FROM image i3
+          JOIN image_tags it ON it.image_id = i3.image_id
+          WHERE i3.artwork_id = a.artwork_id
+        )`;
         
       default:
         throw new Error(`Unknown AST node type: ${ast.type}`);
