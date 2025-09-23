@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-8">
+  <div class="min-h-screen bg-gray-50 py-8" @paste="handlePaste">
     <div class="max-w-2xl mx-auto px-4">
       <div class="bg-white rounded-lg shadow-md p-6">
         <h1 class="text-2xl font-bold text-gray-900 mb-6">Upload Artwork</h1>
@@ -201,42 +201,80 @@ const error = ref('')
 const success = ref('')
 const draggedIndex = ref(null)
 
-const handleFileSelect = (event) => {
-  const files = Array.from(event.target.files)
-  
+// Adds files to the selection, validating type, size, and max count.
+const addFiles = (files) => {
   for (const file of files) {
     if (selectedFiles.value.length >= 15) {
       error.value = 'Maximum 15 images allowed'
       break
     }
-    
+
     if (file.size > 10 * 1024 * 1024) {
-      error.value = `File ${file.name} is too large. Maximum size is 10MB`
+      error.value = `File ${file.name || 'image'} is too large. Maximum size is 10MB`
       continue
     }
-    
-    if (!file.type.startsWith('image/')) {
-      error.value = `File ${file.name} is not an image`
+
+    if (!file.type || !file.type.startsWith('image/')) {
+      error.value = `File ${file.name || 'item'} is not an image`
       continue
     }
-    
-    // Create preview URL
+
     const preview = URL.createObjectURL(file)
+    const inferredExt = (file.type && file.type.includes('/')) ? file.type.split('/')[1] : 'png'
+    const safeName = file.name && file.name.trim().length > 0
+      ? file.name
+      : `pasted-image-${new Date().toISOString().replace(/[:.]/g, '-')}.${inferredExt}`
+
     const fileWithPreview = {
       id: Date.now() + Math.random(),
       file: file,
-      name: file.name,
+      name: safeName,
       size: file.size,
       preview: preview
     }
-    
+
     selectedFiles.value.push(fileWithPreview)
   }
-  
-  // Clear the input
-  event.target.value = ''
+
   if (selectedFiles.value.length > 0) {
     error.value = ''
+  }
+}
+
+const handleFileSelect = (event) => {
+  const files = Array.from(event.target.files)
+  addFiles(files)
+
+  // Clear the input
+  event.target.value = ''
+}
+
+// Handles paste events by extracting image files from the clipboard.
+const handlePaste = (event) => {
+  const clipboardData = event.clipboardData
+  if (!clipboardData) return
+
+  const items = clipboardData.items ? Array.from(clipboardData.items) : []
+  const imageFiles = []
+
+  for (const item of items) {
+    if (item.kind === 'file' && item.type && item.type.startsWith('image/')) {
+      const file = item.getAsFile()
+      if (file) imageFiles.push(file)
+    }
+  }
+
+  if (imageFiles.length === 0 && clipboardData.files) {
+    for (const file of Array.from(clipboardData.files)) {
+      if (file.type && file.type.startsWith('image/')) {
+        imageFiles.push(file)
+      }
+    }
+  }
+
+  if (imageFiles.length > 0) {
+    event.preventDefault()
+    addFiles(imageFiles)
   }
 }
 
